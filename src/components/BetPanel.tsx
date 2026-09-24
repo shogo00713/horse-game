@@ -1,10 +1,10 @@
-import type { BET, Phase, Runner } from "../types/game";
+import type { BetType, Phase, Runner } from "../types/game";
 
 import RunnerButton from "./RunnerButton";
 
 type BetPanelProps = {
     conditionById: Record<string, string>;
-    betType: BET;
+    betType: BetType;
     phase: Phase;
     betstr: string;
     runners: Runner[];
@@ -14,7 +14,7 @@ type BetPanelProps = {
     quinellaSelectedRunner: Runner[];
     exactaSelectedRunner: Runner[];
 
-    onChangeBetType: (betType: BET) => void;
+    onChangeBetType: (betType: BetType) => void;
     onChangeBet: (value: string) => void;
     onSelectRunner: (runner: Runner) => void;
     toggleTrioSelectedRunner: (runner: Runner) => void;
@@ -45,7 +45,7 @@ export default function BetPanel({ conditionById, betType, phase, betstr, oneSel
                   className="bet_panel_select"
                   value={betType}
                   disabled={phase !== "BETTING"}
-                  onChange={(e) => onChangeBetType(e.target.value as BET)}
+                  onChange={(e) => onChangeBetType(e.target.value as BetType)}
                 >
                   <option value="WIN"  >単勝</option>
                   <option value="PLACE">複勝</option>
