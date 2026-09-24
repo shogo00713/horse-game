@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { runners } from "../data/runners";
-import type { BET, Phase, Runner, RaceHistory } from "../types/game";
+import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
 import type { Condition } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
@@ -18,7 +18,7 @@ export function useHorseGame() {
   const [ExactaSelectedRunner, setExactaSelectedRunner] = useState<Runner[]>([]); // 馬単 選択用
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
-  const [betType, setBetType] = useState<BET>("WIN");
+  const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
   const [conditionById, setConditionById] = useState<Record<string, Condition>>(() => initConditions());
 

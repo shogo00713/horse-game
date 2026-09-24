@@ -1,3 +1,9 @@
+/**
+ * 馬のデータ
+ * 
+ * 配列にそのまま書き込んであり、基本的に変更しない
+ */
+
 import type { Runner } from "../types/game";
 
 export const runners: Runner[] = [
