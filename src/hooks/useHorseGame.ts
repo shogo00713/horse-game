@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { runners } from "../data/runners";
-import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
+import type { BetType, Phase, Runner, RaceHistory, BetSelection } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
 
@@ -9,7 +9,7 @@ export function useHorseGame() {
   const [betstr, setBet] = useState("300");
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
-  const [oneSelectedRunner, setSelectedRunner] = useState<Runner | null>(null); // 単勝・複勝 選択用
+  const [oneSelectedRunner, setSelectedRunner] = useState<Runner| null>(null); // 単勝・複勝 選択用
   const [TrioSelectedRunner, setTrioSelectedRunner] = useState<Runner[]>([]); // 3連複 選択用
   const [TrifectaSelectedRunner, setTrifectaSelectedRunner] = useState<
     Runner[]
@@ -157,19 +157,30 @@ export function useHorseGame() {
           : betType === "TRIFECTA"
             ? TrifectaSelectedRunner
             : [];
+
       const twoSelected =
         betType === "QUINELLA"
           ? QuinellaSelectedRunner
           : betType === "EXACTA"
             ? ExactaSelectedRunner
             : [];
+
+      const selection: BetSelection =
+        betType === "WIN" || betType === "PLACE"
+          ? { betType, runner: oneSelectedRunner! }
+          : betType === "TRIO" || betType === "TRIFECTA"
+            ? {
+                betType,
+                runners: threeSelected as [Runner, Runner, Runner],
+              }
+            : {
+                betType,
+                runners: twoSelected as [Runner, Runner],
+              };
       const payout = calculatePayout(
         bet,
-        betType,
-        oneSelectedRunner,
-        threeSelected,
-        twoSelected,
-        finishOrder,
+        selection,
+        finishOrder
       );
       setPreviousResult(result);
       setPayout(payout);
