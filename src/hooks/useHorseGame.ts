@@ -1,94 +1,52 @@
 import { useState } from "react";
 import { runners } from "../data/runners";
-import type { BetType, Phase, Runner, RaceHistory, BetSelection } from "../types/game";
+import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
+import { maxSelectable, buildBetSelection } from "../logic/betRules";
 
 export function useHorseGame() {
   const [money, setMoney] = useState(5000);
   const [betstr, setBet] = useState("300");
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
-  const [oneSelectedRunner, setSelectedRunner] = useState<Runner| null>(null); // 単勝・複勝 選択用
-  const [TrioSelectedRunner, setTrioSelectedRunner] = useState<Runner[]>([]); // 3連複 選択用
-  const [TrifectaSelectedRunner, setTrifectaSelectedRunner] = useState<
-    Runner[]
-  >([]); // 3連単 選択用
-  const [QuinellaSelectedRunner, setQuinellaSelectedRunner] = useState<
-    Runner[]
-  >([]); // 馬連 選択用
-  const [ExactaSelectedRunner, setExactaSelectedRunner] = useState<Runner[]>(
-    [],
-  ); // 馬単 選択用
+  const [selectedRunners, setSelectedRunners] = useState<Runner[]>([]); // 選択済みの馬の配列
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
   const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
 
-  function toggleTrioSelectedRunner(runner: Runner) {
-    setTrioSelectedRunner((prev) => {
-      // すでに選ばれているか？
-      const exists = prev.some((r) => r.id === runner.id);
 
-      // 選ばれていたら → 解除
-      if (exists) {
-        return prev.filter((r) => r.id !== runner.id);
+  function toggleRunner(runner: Runner) {
+    setSelectedRunners((prev) => {
+
+    const exists = prev.some((r) => r.id === runner.id);
+
+    // 選ばれていたら → 解除
+    if (exists) {
+      return prev.filter((r) => r.id !== runner.id);
+    }
+
+      // 1頭 → 押したやつをそのまま選択
+      const max = maxSelectable(betType);
+
+      if (max === 1){
+        return [runner];
       }
 
-      // まだ3頭未満なら → 追加
-      if (prev.length < 3) {
+      // まだ選択できる数未満なら → 追加
+      if (prev.length < maxSelectable(betType)) {
         return [...prev, runner];
       }
 
-      // 3頭すでに選ばれていたら → 何もしない
+      // 選択できる数すでに選ばれていたら → 何もしない
       return prev;
     });
   }
 
-  function toggleTrifectaSelectedRunner(runner: Runner) {
-    setTrifectaSelectedRunner((prev) => {
-      // すでに選ばれているか？
-      const exists = prev.some((r) => r.id === runner.id);
-
-      // 選ばれていたら → 解除
-      if (exists) {
-        return prev.filter((r) => r.id !== runner.id);
-      }
-
-      // まだ3頭未満なら → 追加
-      if (prev.length < 3) {
-        return [...prev, runner];
-      }
-
-      // 3頭すでに選ばれていたら → 何もしない
-      return prev;
-    });
-  }
-
-  function toggleQuinellaSelectedRunner(runner: Runner) {
-    setQuinellaSelectedRunner((prev) => {
-      const exists = prev.some((r) => r.id === runner.id);
-      if (exists) {
-        return prev.filter((r) => r.id !== runner.id);
-      }
-      if (prev.length < 2) {
-        return [...prev, runner];
-      }
-      return prev;
-    });
-  }
-
-  function toggleExactaSelectedRunner(runner: Runner) {
-    setExactaSelectedRunner((prev) => {
-      const exists = prev.some((r) => r.id === runner.id);
-      if (exists) {
-        return prev.filter((r) => r.id !== runner.id);
-      }
-      if (prev.length < 2) {
-        return [...prev, runner];
-      }
-      return prev;
-    });
+  function changeBetType(nextBetType: BetType) {
+    setBetType(nextBetType);
+    setSelectedRunners([]);
   }
 
   // 初期値を localStorage から復元
@@ -121,27 +79,10 @@ export function useHorseGame() {
       setErrorMessage("所持金が不足しています。");
       return;
     }
-    if (
-      (betType === "WIN" || betType === "PLACE") &&
-      oneSelectedRunner === null
-    ) {
-      setErrorMessage("馬を選択してください。");
-      return;
-    }
-    if (betType === "TRIO" && TrioSelectedRunner.length !== 3) {
-      setErrorMessage("3匹の馬を選択してください。");
-      return;
-    }
-    if (betType === "TRIFECTA" && TrifectaSelectedRunner.length !== 3) {
-      setErrorMessage("3匹の馬を選択してください。");
-      return;
-    }
-    if (betType === "QUINELLA" && QuinellaSelectedRunner.length !== 2) {
-      setErrorMessage("2匹の馬を選択してください。");
-      return;
-    }
-    if (betType === "EXACTA" && ExactaSelectedRunner.length !== 2) {
-      setErrorMessage("2匹の馬を選択してください。");
+    if (selectedRunners.length !== maxSelectable(betType)) {
+      setErrorMessage(
+        `選択できる馬の数は ${maxSelectable(betType)} 頭です。`,
+      );
       return;
     }
 
@@ -151,32 +92,7 @@ export function useHorseGame() {
 
     setTimeout(() => {
       const finishOrder = makeFinishOrder(runners);
-      const threeSelected =
-        betType === "TRIO"
-          ? TrioSelectedRunner
-          : betType === "TRIFECTA"
-            ? TrifectaSelectedRunner
-            : [];
-
-      const twoSelected =
-        betType === "QUINELLA"
-          ? QuinellaSelectedRunner
-          : betType === "EXACTA"
-            ? ExactaSelectedRunner
-            : [];
-
-      const selection: BetSelection =
-        betType === "WIN" || betType === "PLACE"
-          ? { betType, runner: oneSelectedRunner! }
-          : betType === "TRIO" || betType === "TRIFECTA"
-            ? {
-                betType,
-                runners: threeSelected as [Runner, Runner, Runner],
-              }
-            : {
-                betType,
-                runners: twoSelected as [Runner, Runner],
-              };
+      const selection = buildBetSelection(betType, selectedRunners);
       const payout = calculatePayout(
         bet,
         selection,
@@ -227,11 +143,7 @@ export function useHorseGame() {
     betstr,
     phase,
     payout,
-    selectedRunner: oneSelectedRunner,
-    TrioSelectedRunner: TrioSelectedRunner,
-    TrifectaSelectedRunner: TrifectaSelectedRunner,
-    QuinellaSelectedRunner: QuinellaSelectedRunner,
-    ExactaSelectedRunner: ExactaSelectedRunner,
+    selectedRunners,
     result,
     previousResult,
     betType,
@@ -239,12 +151,9 @@ export function useHorseGame() {
     raceHistory,
     // actions
     setBet,
-    setBetType,
-    setSelectedRunner,
-    toggleTrioSelectedRunner,
-    toggleTrifectaSelectedRunner,
-    toggleQuinellaSelectedRunner,
-    toggleExactaSelectedRunner,
+    changeBetType,
+    setSelectedRunners,
+    toggleRunner,
     go,
     accept,
     setTotalBet,

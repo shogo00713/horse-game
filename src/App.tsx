@@ -16,23 +16,15 @@ export default function App() {
     betstr,
     phase,
     payout,
-    selectedRunner,
-    TrioSelectedRunner,
-    TrifectaSelectedRunner,
-    QuinellaSelectedRunner,
-    ExactaSelectedRunner,
+    selectedRunners,
     result,
     previousResult,
     betType,
     errorMessage,
     raceHistory,
     setBet,
-    setBetType,
-    setSelectedRunner,
-    toggleTrioSelectedRunner,
-    toggleTrifectaSelectedRunner,
-    toggleQuinellaSelectedRunner,
-    toggleExactaSelectedRunner,
+    changeBetType,
+    toggleRunner,
     go,
     accept,
     setTotalBet,
@@ -57,16 +49,11 @@ export default function App() {
         <div className="left_panel">
           {/* 結果表示パネル */}
           <ResultPanel
-            betType={betType}
             phase={phase}
             runners={runners}
             result={result}
             previousResult={previousResult}
-            oneSelectedRunner={selectedRunner}
-            trioSelectedRunner={TrioSelectedRunner}
-            trifectaSelectedRunner={TrifectaSelectedRunner}
-            quinellaSelectedRunner={QuinellaSelectedRunner}
-            exactaSelectedRunner={ExactaSelectedRunner}
+            selectedRunners={selectedRunners}
           />
 
           <button
@@ -90,19 +77,11 @@ export default function App() {
             betType={betType}
             phase={phase}
             betstr={betstr}
-            oneSelectedRunner={selectedRunner}
-            trioSelectedRunner={TrioSelectedRunner}
-            trifectaSelectedRunner={TrifectaSelectedRunner}
-            quinellaSelectedRunner={QuinellaSelectedRunner}
-            exactaSelectedRunner={ExactaSelectedRunner}
             runners={runners}
-            onChangeBetType={setBetType}
+            selectedRunners={selectedRunners}
+            onChangeBetType={changeBetType}
             onChangeBet={setBet}
-            onSelectRunner={setSelectedRunner}
-            toggleTrioSelectedRunner={toggleTrioSelectedRunner}
-            toggleTrifectaSelectedRunner={toggleTrifectaSelectedRunner}
-            toggleQuinellaSelectedRunner={toggleQuinellaSelectedRunner}
-            toggleExactaSelectedRunner={toggleExactaSelectedRunner}
+            onSelectRunner={toggleRunner}
             onSetTotalBet={setTotalBet}
             onSubmit={go}
           />

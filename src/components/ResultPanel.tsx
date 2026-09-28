@@ -1,16 +1,11 @@
 import type { Phase, Runner } from "../types/game";
 
 type ResultPanelProps = {
-  betType: string;
   phase: Phase;
   runners: Runner[];
   result: Runner[];
   previousResult: Runner[];
-  oneSelectedRunner: Runner | null;
-  trioSelectedRunner: Runner[];
-  trifectaSelectedRunner: Runner[];
-  quinellaSelectedRunner: Runner[];
-  exactaSelectedRunner: Runner[];
+  selectedRunners: Runner[];
 };
 
 function phaseMessage(phase: Phase): string {
@@ -29,27 +24,9 @@ export default function ResultPanel({
   runners,
   result,
   previousResult,
-  oneSelectedRunner,
-  trioSelectedRunner,
-  trifectaSelectedRunner,
-  quinellaSelectedRunner,
-  exactaSelectedRunner,
-  betType,
+  selectedRunners,
 }: ResultPanelProps) {
-  const selectedIds =
-    betType === "WIN" || betType === "PLACE"
-      ? oneSelectedRunner
-        ? [oneSelectedRunner.id]
-        : []
-      : betType === "TRIO"
-        ? trioSelectedRunner.map((runner) => runner.id)
-        : betType === "TRIFECTA"
-          ? trifectaSelectedRunner.map((runner) => runner.id)
-          : betType === "QUINELLA"
-            ? quinellaSelectedRunner.map((runner) => runner.id)
-            : betType === "EXACTA"
-              ? exactaSelectedRunner.map((runner) => runner.id)
-              : [];
+  const selectedIds = selectedRunners.map((runner) => runner.id);
 
   return (
     <div className="result_panel">

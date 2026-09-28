@@ -1,4 +1,5 @@
 import type { BetType, Phase, Runner } from "../types/game";
+import { maxSelectable, isOrderedBetType } from "../logic/betRules";
 
 import RunnerButton from "./RunnerButton";
 
@@ -7,19 +8,11 @@ type BetPanelProps = {
   phase: Phase;
   betstr: string;
   runners: Runner[];
-  oneSelectedRunner: Runner | null;
-  trioSelectedRunner: Runner[];
-  trifectaSelectedRunner: Runner[];
-  quinellaSelectedRunner: Runner[];
-  exactaSelectedRunner: Runner[];
+  selectedRunners: Runner[];
 
   onChangeBetType: (betType: BetType) => void;
   onChangeBet: (value: string) => void;
   onSelectRunner: (runner: Runner) => void;
-  toggleTrioSelectedRunner: (runner: Runner) => void;
-  toggleTrifectaSelectedRunner: (runner: Runner) => void;
-  toggleQuinellaSelectedRunner: (runner: Runner) => void;
-  toggleExactaSelectedRunner: (runner: Runner) => void;
   onSetTotalBet: () => void;
   onSubmit: () => void;
 };
@@ -28,41 +21,17 @@ export default function BetPanel({
   betType,
   phase,
   betstr,
-  oneSelectedRunner,
-  trioSelectedRunner,
-  trifectaSelectedRunner,
-  quinellaSelectedRunner,
-  exactaSelectedRunner,
+  selectedRunners,
   runners,
   onChangeBetType,
   onChangeBet,
   onSelectRunner,
-  toggleTrioSelectedRunner,
-  toggleTrifectaSelectedRunner,
-  toggleQuinellaSelectedRunner,
-  toggleExactaSelectedRunner,
   onSetTotalBet,
   onSubmit,
 }: BetPanelProps) {
   const isBetting = phase === "BETTING";
-  const isSingleReady =
-    (betType === "WIN" || betType === "PLACE") && oneSelectedRunner !== null;
-  const isTrioReady = betType === "TRIO" && trioSelectedRunner.length === 3;
-  const isTrifectaReady =
-    betType === "TRIFECTA" && trifectaSelectedRunner.length === 3;
-  const isQuinellaReady =
-    betType === "QUINELLA" && quinellaSelectedRunner.length === 2;
-  const isExactaReady =
-    betType === "EXACTA" && exactaSelectedRunner.length === 2;
   const isSubmitDisabled =
-    !isBetting ||
-    !(
-      isSingleReady ||
-      isTrioReady ||
-      isTrifectaReady ||
-      isQuinellaReady ||
-      isExactaReady
-    );
+    !isBetting || selectedRunners.length !== maxSelectable(betType);
 
   return (
     <div className="bet_panel">
@@ -86,85 +55,26 @@ export default function BetPanel({
       <div>
         <div className="bet_panel_label ">馬を選択</div>
         <div className="bet_panel_race_list">
-          {(betType === "WIN" || betType === "PLACE") &&
-            runners.map((r) => (
+          {runners.map((r) => {
+            const index = selectedRunners.findIndex(
+              (runner) => runner.id === r.id,
+            );
+            const isSelected = index !== -1;
+            const badge =
+              isSelected && isOrderedBetType(betType)
+                ? String(index + 1)
+                : null;
+            return (
               <RunnerButton
                 key={r.id}
                 runner={r}
-                isSelected={oneSelectedRunner?.id === r.id}
-                selectionBadge={null}
+                isSelected={isSelected}
+                selectionBadge={badge}
                 disabled={phase !== "BETTING"}
                 onClick={() => onSelectRunner(r)}
               />
-            ))}
-          {betType === "TRIO" &&
-            runners.map((r) => (
-              <RunnerButton
-                key={r.id}
-                runner={r}
-                isSelected={trioSelectedRunner.some(
-                  (runner) => runner.id === r.id,
-                )}
-                selectionBadge={null}
-                disabled={phase !== "BETTING"}
-                onClick={() => toggleTrioSelectedRunner(r)}
-              />
-            ))}
-          {betType === "TRIFECTA" &&
-            runners.map((r) => {
-              const index = trifectaSelectedRunner.findIndex(
-                (runner) => runner.id === r.id,
-              );
-              const isSelected = index !== -1;
-              const badge = isSelected ? String(index + 1) : null;
-              return (
-                <RunnerButton
-                  key={r.id}
-                  runner={r}
-                  isSelected={trifectaSelectedRunner.some(
-                    (runner) => runner.id === r.id,
-                  )}
-                  selectionBadge={badge}
-                  disabled={phase !== "BETTING"}
-                  onClick={() => toggleTrifectaSelectedRunner(r)}
-                />
-              );
-            })}
-          {betType === "QUINELLA" &&
-            runners.map((r) => {
-              return (
-                <RunnerButton
-                  key={r.id}
-                  runner={r}
-                  isSelected={quinellaSelectedRunner.some(
-                    (runner) => runner.id === r.id,
-                  )}
-                  selectionBadge={null}
-                  disabled={phase !== "BETTING"}
-                  onClick={() => toggleQuinellaSelectedRunner(r)}
-                />
-              );
-            })}
-          {betType === "EXACTA" &&
-            runners.map((r) => {
-              const index = exactaSelectedRunner.findIndex(
-                (runner) => runner.id === r.id,
-              );
-              const isSelected = index !== -1;
-              const badge = isSelected ? String(index + 1) : null;
-              return (
-                <RunnerButton
-                  key={r.id}
-                  runner={r}
-                  isSelected={exactaSelectedRunner.some(
-                    (runner) => runner.id === r.id,
-                  )}
-                  selectionBadge={badge}
-                  disabled={phase !== "BETTING"}
-                  onClick={() => toggleExactaSelectedRunner(r)}
-                />
-              );
-            })}
+            );
+          })}
         </div>
       </div>
       <div className="row">
