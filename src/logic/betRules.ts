@@ -1,11 +1,10 @@
 /**
  * 賭け方ごとの選択馬数のルール
- * 
+ *
  * 賭け方ごとに選択できる馬の頭数が異なるので、それを正しく判定する関数を提供する
  */
 
 import type { BetType, BetSelection, Runner } from "../types/game";
-
 
 // 賭け方ごとに選択できる馬の頭数
 export function maxSelectable(betType: BetType): number {

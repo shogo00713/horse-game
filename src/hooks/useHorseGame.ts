@@ -1,3 +1,8 @@
+/**
+ * 競馬ゲーム全体の進行を管理するカスタムフック
+ *
+ */
+
 import { useState } from "react";
 import { runners } from "../data/runners";
 import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
@@ -16,21 +21,19 @@ export function useHorseGame() {
   const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
 
-
   function toggleRunner(runner: Runner) {
     setSelectedRunners((prev) => {
+      const exists = prev.some((r) => r.id === runner.id);
 
-    const exists = prev.some((r) => r.id === runner.id);
-
-    // 選ばれていたら → 解除
-    if (exists) {
-      return prev.filter((r) => r.id !== runner.id);
-    }
+      // 選ばれていたら → 解除
+      if (exists) {
+        return prev.filter((r) => r.id !== runner.id);
+      }
 
       // 1頭 → 押したやつをそのまま選択
       const max = maxSelectable(betType);
 
-      if (max === 1){
+      if (max === 1) {
         return [runner];
       }
 
@@ -80,9 +83,7 @@ export function useHorseGame() {
       return;
     }
     if (selectedRunners.length !== maxSelectable(betType)) {
-      setErrorMessage(
-        `選択できる馬の数は ${maxSelectable(betType)} 頭です。`,
-      );
+      setErrorMessage(`選択できる馬の数は ${maxSelectable(betType)} 頭です。`);
       return;
     }
 
@@ -93,11 +94,7 @@ export function useHorseGame() {
     setTimeout(() => {
       const finishOrder = makeFinishOrder(runners);
       const selection = buildBetSelection(betType, selectedRunners);
-      const payout = calculatePayout(
-        bet,
-        selection,
-        finishOrder
-      );
+      const payout = calculatePayout(bet, selection, finishOrder);
       setPreviousResult(result);
       setPayout(payout);
       setResult(finishOrder);
