@@ -1,7 +1,16 @@
 /* 全体のデフォルト */
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji";
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans JP",
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
   background: #fafafa;
   color: #111;
 }

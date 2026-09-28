@@ -1,29 +1,32 @@
 /* 共通設定 */
-:root{
+:root {
   /* カラー変数 */
   --bg: rgba(250, 250, 250, 1);
   --text: rgba(0, 0, 0, 0.8);
-  --muted: rgba(15,23,42,0.65);
-  --border: rgba(15,23,42,0.65);
-  --accent: rgba(37,99,235,0.85);
+  --muted: rgba(15, 23, 42, 0.65);
+  --border: rgba(15, 23, 42, 0.65);
+  --accent: rgba(37, 99, 235, 0.85);
   /* その他の変数 */
   --radius: 18px;
 }
 
-button{
+button {
   appearance: none;
   border: 1px solid var(--border);
   padding: 10px;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
 
   color: var(--text);
   background: var(--bg);
 
   cursor: pointer;
-  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    background 120ms ease;
 }
 
-button:disabled{
+button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
   transform: none;
@@ -31,16 +34,26 @@ button:disabled{
 }
 
 /* サイズの設定 */
-*{ box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 /* ボディの共通設定 */
-body{
+body {
   margin: 0;
   color: var(--text);
   background-color: var(--bg);
-  font-family:  'Noto Serif JP', system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Arial, sans-serif;
+  font-family:
+    "Noto Serif JP",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Noto Sans JP",
+    Arial,
+    sans-serif;
 }
-.app{
+.app {
   min-height: 100vh;
   padding: 24px;
   display: grid;
@@ -48,7 +61,7 @@ body{
 }
 
 /* ヘッダー部分 */
-header{
+header {
   width: 100%;
   padding: 15px;
   border-bottom: 1px solid var(--border);
@@ -61,7 +74,7 @@ header{
   gap: 16px;
 }
 
-.header_title{
+.header_title {
   margin: 0;
   font-size: 40px;
   letter-spacing: 2px;
@@ -73,10 +86,10 @@ header{
   font-size: 25px;
 }
 
-.money{
+.money {
   font-size: 35px;
   font-weight: 900;
-  color: rgba(37,99,235,0.85);
+  color: rgba(37, 99, 235, 0.85);
 }
 
 /* メイン部分 */
@@ -89,12 +102,12 @@ main {
   margin: 24px 0;
 }
 
-.left_panel{
+.left_panel {
   display: grid;
   gap: 18px;
 }
 
-.right_panel{
+.right_panel {
   display: grid;
   grid-template-rows: auto auto;
   gap: 24px;
@@ -133,31 +146,31 @@ main {
 
 /* 結果表示パネル */
 
-.phaseMessage{
+.phaseMessage {
   font-size: 30px;
   color: var(--text);
 }
 
-.mainTitle{
+.mainTitle {
   font-size: 13px;
   color: var(--muted);
 }
 
-.finish{
+.finish {
   font-size: 20px;
   font-weight: 900;
-  letter-spacing: .3px;
+  letter-spacing: 0.3px;
   line-height: 1.3;
   word-break: break-word;
 }
 
-.finishLines{
+.finishLines {
   margin-top: 0;
   display: grid;
   gap: 6px;
 }
 
-.finishLine{
+.finishLine {
   font-size: 16px;
   font-weight: 800;
   padding: 8px 10px;
@@ -169,48 +182,48 @@ main {
   gap: 8px;
 }
 
-.finishLine--selected{
-  background: rgba(219,234,254,0.9);
+.finishLine--selected {
+  background: rgba(219, 234, 254, 0.9);
 }
 
-.finishRank{
+.finishRank {
   display: inline-block;
   font-weight: 900;
   letter-spacing: 0.2px;
 }
 
-.finishName{
+.finishName {
   color: rgba(0, 0, 0, 0.9);
   font-size: 16px;
   font-weight: 700;
 }
 
-.finishRank--1{
+.finishRank--1 {
   color: rgba(191, 141, 0, 1);
   font-size: 22px;
 }
 
-.finishName--1{
+.finishName--1 {
   color: var(--text);
   font-size: 22px;
 }
 
-.finishRank--2{
+.finishRank--2 {
   color: rgba(122, 130, 146, 1);
   font-size: 20px;
 }
 
-.finishName--2{
+.finishName--2 {
   color: var(--text);
   font-size: 20px;
 }
 
-.finishRank--3{
+.finishRank--3 {
   color: rgba(158, 92, 56, 1);
   font-size: 18px;
 }
 
-.finishName--3{
+.finishName--3 {
   color: var(--text);
   font-size: 18px;
 }
@@ -218,12 +231,12 @@ main {
 .finishRank--4,
 .finishRank--5,
 .finishRank--6,
-.finishRank--7{
+.finishRank--7 {
   color: var(--text);
   font-size: 16px;
 }
 
-.previous_result{
+.previous_result {
   margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border);
@@ -231,7 +244,7 @@ main {
   gap: 6px;
 }
 
-.previous_result_title{
+.previous_result_title {
   font-size: 13px;
   color: var(--muted);
 }
@@ -319,17 +332,17 @@ main {
   font-weight: 700;
 }
 
-.bet_panel_submit_button:hover{
+.bet_panel_submit_button:hover {
   opacity: 0.92;
 }
 
-.bet_panel_submit_button:disabled{
-  background: rgba(37,99,235,0.4);
-  border-color: rgba(37,99,235,0.4);
-  color: rgba(255,255,255,0.85);
+.bet_panel_submit_button:disabled {
+  background: rgba(37, 99, 235, 0.4);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-button.runner{
+button.runner {
   background: #ffffff;
   color: var(--text);
   border: 1px solid var(--border);
@@ -344,28 +357,28 @@ button.runner{
   text-align: left;
 }
 
-button.runner--selected{
+button.runner--selected {
   border-color: var(--accent);
-  background: rgba(219,234,254,0.9);
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+  background: rgba(219, 234, 254, 0.9);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
   transform: translateY(-1px);
 }
 
-button.runner:hover{
-  background: rgba(219,234,254,0.55);
+button.runner:hover {
+  background: rgba(219, 234, 254, 0.55);
 }
 
-button.runner:disabled{
-  background: rgba(15,23,42,0.05);
-  color: rgba(15,23,42,0.3);
-  border-color: rgba(15,23,42,0.05);
+button.runner:disabled {
+  background: rgba(15, 23, 42, 0.05);
+  color: rgba(15, 23, 42, 0.3);
+  border-color: rgba(15, 23, 42, 0.05);
   cursor: not-allowed;
 }
 
-.runnerName{
+.runnerName {
   font-weight: 900;
 }
-.runnerOdds{
+.runnerOdds {
   font-size: 12px;
   color: var(--muted);
 }
@@ -413,21 +426,21 @@ button.runner:disabled{
   letter-spacing: 0.2px;
 }
 
-.payout_panel button{
+.payout_panel button {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
   font-weight: 700;
 }
 
-.payout_panel button:hover{
+.payout_panel button:hover {
   opacity: 0.92;
 }
 
-.payout_panel button:disabled{
-  background: rgba(37,99,235,0.4);
-  border-color: rgba(37,99,235,0.4);
-  color: rgba(255,255,255,0.85);
+.payout_panel button:disabled {
+  background: rgba(37, 99, 235, 0.4);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* モーダル */
@@ -489,9 +502,18 @@ button.runner:disabled{
   padding: 4px 0;
   font-size: 14px;
 }
-.history_rank  { color: #888; width: 28px; }
-.history_name  { font-weight: 600; flex: 1; }
-.history_odds  { color: #888; font-size: 12px; }
+.history_rank {
+  color: #888;
+  width: 28px;
+}
+.history_name {
+  font-weight: 600;
+  flex: 1;
+}
+.history_odds {
+  color: #888;
+  font-size: 12px;
+}
 
 /* 調子バッジ */
 .history_cond {
@@ -500,6 +522,15 @@ button.runner:disabled{
   padding: 2px 8px;
   border-radius: 999px;
 }
-.history_cond--hot    { background: #fff0f0; color: #e33; }
-.history_cond--cold   { background: #f0f4ff; color: #36c; }
-.history_cond--normal { background: #f4f4f4; color: #888; }
+.history_cond--hot {
+  background: #fff0f0;
+  color: #e33;
+}
+.history_cond--cold {
+  background: #f0f4ff;
+  color: #36c;
+}
+.history_cond--normal {
+  background: #f4f4f4;
+  color: #888;
+}

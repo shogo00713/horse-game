@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { runners } from "../data/runners";
 import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
-import type { Condition } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
-
 
 export function useHorseGame() {
   const [money, setMoney] = useState(5000);
@@ -13,14 +11,19 @@ export function useHorseGame() {
   const [payout, setPayout] = useState(0);
   const [oneSelectedRunner, setSelectedRunner] = useState<Runner | null>(null); // 単勝・複勝 選択用
   const [TrioSelectedRunner, setTrioSelectedRunner] = useState<Runner[]>([]); // 3連複 選択用
-  const [TrifectaSelectedRunner, setTrifectaSelectedRunner] = useState<Runner[]>([]); // 3連単 選択用
-  const [QuinellaSelectedRunner, setQuinellaSelectedRunner] = useState<Runner[]>([]); // 馬連 選択用
-  const [ExactaSelectedRunner, setExactaSelectedRunner] = useState<Runner[]>([]); // 馬単 選択用
+  const [TrifectaSelectedRunner, setTrifectaSelectedRunner] = useState<
+    Runner[]
+  >([]); // 3連単 選択用
+  const [QuinellaSelectedRunner, setQuinellaSelectedRunner] = useState<
+    Runner[]
+  >([]); // 馬連 選択用
+  const [ExactaSelectedRunner, setExactaSelectedRunner] = useState<Runner[]>(
+    [],
+  ); // 馬単 選択用
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
   const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
-  const [conditionById, setConditionById] = useState<Record<string, Condition>>(() => initConditions());
 
   function toggleTrioSelectedRunner(runner: Runner) {
     setTrioSelectedRunner((prev) => {
@@ -88,30 +91,6 @@ export function useHorseGame() {
     });
   }
 
-  function initConditions(): Record<string, Condition> {
-    const ids = [...runners.map((r) => r.id)];
-    // シャッフル
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
-    }
-    const map: Record<string, Condition> = {};
-    runners.forEach((r) => (map[r.id] = "NORMAL"));
-    ids.slice(0, 2).forEach((id) => (map[id] = "HOT"));
-    ids.slice(2, 4).forEach((id) => (map[id] = "COLD"));
-    return map;
-  }
-
-  function shuffleConditions() {
-    setConditionById((prev) => {
-      const next = { ...prev };
-      const ids = runners.map((r) => r.id);
-      const [a, b] = ids.sort(() => Math.random() - 0.5).slice(0, 2);
-      [next[a], next[b]] = [next[b], next[a]];
-      return next;
-    });
-  }
-
   // 初期値を localStorage から復元
   const [raceHistory, setRaceHistory] = useState<RaceHistory[]>(() => {
     try {
@@ -128,7 +107,6 @@ export function useHorseGame() {
   });
 
   function go() {
-  
     // ----- 抽選前 -----
     if (phase !== "BETTING") return;
 
@@ -143,7 +121,10 @@ export function useHorseGame() {
       setErrorMessage("所持金が不足しています。");
       return;
     }
-    if ((betType === "WIN" || betType === "PLACE") && oneSelectedRunner === null) {
+    if (
+      (betType === "WIN" || betType === "PLACE") &&
+      oneSelectedRunner === null
+    ) {
       setErrorMessage("馬を選択してください。");
       return;
     }
@@ -169,10 +150,27 @@ export function useHorseGame() {
     setMoney((prev) => prev - bet);
 
     setTimeout(() => {
-      const finishOrder = makeFinishOrder(runners, initConditions());
-      const threeSelected = betType === "TRIO" ? TrioSelectedRunner : betType === "TRIFECTA" ? TrifectaSelectedRunner : [];
-      const twoSelected = betType === "QUINELLA" ? QuinellaSelectedRunner : betType === "EXACTA" ? ExactaSelectedRunner : [];
-      const payout = calculatePayout(bet, betType, oneSelectedRunner, threeSelected, twoSelected, finishOrder);
+      const finishOrder = makeFinishOrder(runners);
+      const threeSelected =
+        betType === "TRIO"
+          ? TrioSelectedRunner
+          : betType === "TRIFECTA"
+            ? TrifectaSelectedRunner
+            : [];
+      const twoSelected =
+        betType === "QUINELLA"
+          ? QuinellaSelectedRunner
+          : betType === "EXACTA"
+            ? ExactaSelectedRunner
+            : [];
+      const payout = calculatePayout(
+        bet,
+        betType,
+        oneSelectedRunner,
+        threeSelected,
+        twoSelected,
+        finishOrder,
+      );
       setPreviousResult(result);
       setPayout(payout);
       setResult(finishOrder);
@@ -184,8 +182,7 @@ export function useHorseGame() {
     // 新しい履歴を作成
     const newHistory: RaceHistory = {
       raceNo,
-      result,           // 今のレース結果
-      conditions: conditionById,  // 今の調子マップ
+      result, // 今のレース結果
     };
 
     // 直近8レース分だけ保持
@@ -197,9 +194,6 @@ export function useHorseGame() {
     // localStorage に保存
     localStorage.setItem("horse-race-history", JSON.stringify(updated));
     localStorage.setItem("horse-race-no", String(raceNo + 1));
-
-    // 調子を入れ替え
-    shuffleConditions();
 
     // 既存のリセット処理...
     setMoney((prev) => prev + payout);
@@ -214,7 +208,6 @@ export function useHorseGame() {
   function resetMoney() {
     setMoney(5000);
   }
-
 
   return {
     // states
@@ -232,7 +225,6 @@ export function useHorseGame() {
     previousResult,
     betType,
     errorMessage,
-    conditionById,
     raceHistory,
     // actions
     setBet,

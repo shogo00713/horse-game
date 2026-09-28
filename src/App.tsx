@@ -25,7 +25,6 @@ export default function App() {
     previousResult,
     betType,
     errorMessage,
-    conditionById,
     raceHistory,
     setBet,
     setBetType,
@@ -44,23 +43,18 @@ export default function App() {
 
   return (
     <div className="app">
-
       <HistoryModal
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         history={raceHistory}
       />
-      
+
       {/* ヘッダー部分 */}
-      <Header
-        money={money}
-        onResetMoney={resetMoney}
-      />
+      <Header money={money} onResetMoney={resetMoney} />
 
       {/* メイン部分 */}
       <main>
         <div className="left_panel">
-
           {/* 結果表示パネル */}
           <ResultPanel
             betType={betType}
@@ -75,25 +69,24 @@ export default function App() {
             exactaSelectedRunner={ExactaSelectedRunner}
           />
 
-      <button
-        className="history_button"
-        onClick={() => setIsHistoryOpen(true)}
-      > 📋 履歴
-      </button>
-
+          <button
+            className="history_button"
+            onClick={() => setIsHistoryOpen(true)}
+          >
+            {" "}
+            📋 履歴
+          </button>
         </div>
 
         <div className="right_panel">
-
           {errorMessage && (
             <p className="error_message" aria-live="polite">
               {errorMessage}
             </p>
           )}
 
-          {/* ベットパネル */ }
+          {/* ベットパネル */}
           <BetPanel
-            conditionById={conditionById}
             betType={betType}
             phase={phase}
             betstr={betstr}
@@ -115,15 +108,9 @@ export default function App() {
           />
 
           {/* 払い戻しパネル */}
-          <PayoutPanel
-            payout={payout}
-            phase={phase}
-            onAccept={accept}
-          />
-
+          <PayoutPanel payout={payout} phase={phase} onAccept={accept} />
         </div>
       </main>
-
     </div>
   );
 }
