@@ -1,6 +1,8 @@
 /**
  * 競馬ゲーム全体の進行を管理するカスタムフック
  *
+ * go() で1回のレースが進行する
+ * accept() でレース結果を確定し、次のレースに進む
  */
 
 import { useState } from "react";
@@ -15,12 +17,13 @@ export function useHorseGame() {
   const [betstr, setBet] = useState("300");
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
-  const [selectedRunners, setSelectedRunners] = useState<Runner[]>([]); // 選択済みの馬の配列
+  const [selectedRunners, setSelectedRunners] = useState<Runner[]>([]);
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
   const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 選択中の馬を切り替える操作のラッパー
   function toggleRunner(runner: Runner) {
     setSelectedRunners((prev) => {
       const exists = prev.some((r) => r.id === runner.id);
@@ -47,6 +50,7 @@ export function useHorseGame() {
     });
   }
 
+  // ベットタイプを切り替える操作のラッパー
   function changeBetType(nextBetType: BetType) {
     setBetType(nextBetType);
     setSelectedRunners([]);
@@ -67,15 +71,26 @@ export function useHorseGame() {
     return saved ? Number(saved) : 1;
   });
 
+  // 全額ベット用の補助関数
+  function setTotalBet() {
+    setBet(money.toString());
+  }
+
+  // 所持金をリセットする補助関数
+  function resetMoney() {
+    setMoney(5000);
+  }
+
   function go() {
     // ----- 抽選前 -----
+
     if (phase !== "BETTING") return;
 
     // 入力のエラーチェック
     const bet = Number(betstr);
     setErrorMessage("");
     if (bet <= 0) {
-      setErrorMessage("賭ける金額を入力してください。");
+      setErrorMessage("賭ける金額を1円以上で入力してください。");
       return;
     }
     if (bet > money) {
@@ -87,17 +102,21 @@ export function useHorseGame() {
       return;
     }
 
-    // ----- 抽選中 => 結果発表 -----
+    // ----- 抽選中 -----
     setPhase("DRAWING");
     setMoney((prev) => prev - bet);
 
     setTimeout(() => {
-      const finishOrder = makeFinishOrder(runners);
-      const selection = buildBetSelection(betType, selectedRunners);
-      const payout = calculatePayout(bet, selection, finishOrder);
+      // 前回結果の保存
       setPreviousResult(result);
-      setPayout(payout);
+      // 選択の確定
+      const selection = buildBetSelection(betType, selectedRunners);
+      // 着順の生成
+      const finishOrder = makeFinishOrder(runners);
       setResult(finishOrder);
+      // 払い戻しの計算
+      const payout = calculatePayout(bet, selection, finishOrder);
+      setPayout(payout);
       setPhase("PAYOUT");
     }, 1000);
   }
@@ -119,22 +138,13 @@ export function useHorseGame() {
     localStorage.setItem("horse-race-history", JSON.stringify(updated));
     localStorage.setItem("horse-race-no", String(raceNo + 1));
 
-    // 既存のリセット処理...
+    // 次のレースの準備
     setMoney((prev) => prev + payout);
     setPhase("BETTING");
     setPayout(0);
   }
 
-  function setTotalBet() {
-    setBet(money.toString());
-  }
-
-  function resetMoney() {
-    setMoney(5000);
-  }
-
   return {
-    // states
     runners,
     money,
     betstr,
@@ -146,7 +156,6 @@ export function useHorseGame() {
     betType,
     errorMessage,
     raceHistory,
-    // actions
     setBet,
     changeBetType,
     setSelectedRunners,

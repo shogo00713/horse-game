@@ -70,6 +70,15 @@ function isSameCombination(
   return selectedIds.every((id, i) => id === resultIds[i]);
 }
 
+// 選んだ馬たちのオッズから、基準値+重み付き合計でオッズを計算する
+function calculateWeightedOdds(
+  base: number,
+  selected: Runner[],
+  weights: number[],
+): number {
+  return base + selected.reduce((sum, r, i) => sum + (r.odds - 1) * weights[i], 0);
+}
+
 // 単勝計算
 function calculateWinPayout(
   bet: number,
@@ -77,7 +86,6 @@ function calculateWinPayout(
   result: Runner[],
 ): number {
   // 単勝のオッズ計算式は、そのままのオッズを使用する
-
   const isHit = isSameOrder([selected], result, 1);
   return isHit ? Math.floor(selected.odds * bet) : 0;
 }
@@ -90,7 +98,6 @@ function calculatePlacePayout(
 ): number {
   // 複勝のオッズ計算式
   const placeOdds = 1 + (selected.odds - 0.7) * 0.3553;
-
   const isHit = result.slice(0, 3).some((r) => r.id === selected.id);
   return isHit ? Math.floor(placeOdds * bet) : 0;
 }
@@ -102,12 +109,7 @@ function calculateTrioPayout(
   result: Runner[],
 ): number {
   // 3連複のオッズ計算式
-  const trioOdds =
-    15 +
-    (threeSelected[0].odds - 1) * 2.0 +
-    (threeSelected[1].odds - 1) * 1.5 +
-    (threeSelected[2].odds - 1) * 1.0;
-
+  const trioOdds = calculateWeightedOdds(15, threeSelected, [2.0, 1.5, 1.0]);
   const isHit = isSameCombination(threeSelected, result, 3);
   return isHit ? Math.floor(trioOdds * bet) : 0;
 }
@@ -119,12 +121,7 @@ function calculateTrifectaPayout(
   result: Runner[],
 ): number {
   // 3連単のオッズ計算式
-  const trifectaOdds =
-    40 +
-    (threeSelected[0].odds - 1) * 4.0 +
-    (threeSelected[1].odds - 1) * 2.5 +
-    (threeSelected[2].odds - 1) * 2.0;
-
+  const trifectaOdds = calculateWeightedOdds(40, threeSelected, [4.0, 2.5, 2.0]);
   const isHit = isSameOrder(threeSelected, result, 3);
   return isHit ? Math.floor(trifectaOdds * bet) : 0;
 }
@@ -136,9 +133,7 @@ function calculateQuinellaPayout(
   result: Runner[],
 ): number {
   // 馬連のオッズ計算式
-  const quinellaOdds =
-    8 + (twoSelected[0].odds - 1) * 1.5 + (twoSelected[1].odds - 1) * 1.0;
-
+  const quinellaOdds = calculateWeightedOdds(8, twoSelected, [1.5, 1.0]);
   const isHit = isSameCombination(twoSelected, result, 2);
   return isHit ? Math.floor(quinellaOdds * bet) : 0;
 }
@@ -150,9 +145,7 @@ function calculateExactaPayout(
   result: Runner[],
 ): number {
   // 馬単のオッズ計算式
-  const exactaOdds =
-    20 + (twoSelected[0].odds - 1) * 3.0 + (twoSelected[1].odds - 1) * 2.0;
-
+  const exactaOdds = calculateWeightedOdds(20, twoSelected, [3.0, 2.0]);
   const isHit = isSameOrder(twoSelected, result, 2);
   return isHit ? Math.floor(exactaOdds * bet) : 0;
 }
