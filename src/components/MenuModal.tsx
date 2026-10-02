@@ -9,7 +9,6 @@ import { useState } from "react";
 import Modal from "./Modal";
 import GuideContent from "./GuideContent";
 import Icon from "./Icon";
-import { GAME_MODES, MODES, type GameMode } from "../data/modes";
 import styles from "./MenuModal.module.css";
 
 type Tab = "settings" | "guide";
@@ -21,9 +20,6 @@ type MenuModalProps = {
   canResetMoney: boolean;
   onResetMoney: () => void;
   onShowTutorial: () => void;
-  mode: GameMode;
-  onChangeMode: (mode: GameMode) => void;
-  canChangeMode: boolean;
 };
 
 export default function MenuModal({
@@ -33,9 +29,6 @@ export default function MenuModal({
   canResetMoney,
   onResetMoney,
   onShowTutorial,
-  mode,
-  onChangeMode,
-  canChangeMode,
 }: MenuModalProps) {
   const [tab, setTab] = useState<Tab>("settings");
 
@@ -66,35 +59,6 @@ export default function MenuModal({
         <GuideContent />
       ) : (
         <ul className={styles.settings}>
-          <li className={styles.setting}>
-            <div className={styles.modeInfo}>
-              <div className={styles.settingName}>モード(出走頭数)</div>
-              <div className={styles.settingNote}>
-                {MODES[mode].description}
-                {!canChangeMode && "(ベット受付中のみ切り替えられます)"}
-              </div>
-              <div className={styles.modeButtons} role="radiogroup">
-                {GAME_MODES.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    role="radio"
-                    aria-checked={m === mode}
-                    disabled={!canChangeMode}
-                    className={
-                      m === mode
-                        ? `${styles.modeButton} ${styles.modeButtonActive}`
-                        : styles.modeButton
-                    }
-                    onClick={() => onChangeMode(m)}
-                  >
-                    {MODES[m].label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </li>
-
           <li className={styles.setting}>
             <div>
               <div className={styles.settingName}>

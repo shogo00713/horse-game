@@ -1,11 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  marginalWinProbabilities,
-  deriveOdds,
-  payoutMultiplier,
-  RTP_BY_TYPE,
-} from "./odds";
-import { runners, runners16 } from "../data/runners";
+import { marginalWinProbabilities, deriveOdds, RTP_BY_TYPE } from "./odds";
+import { runners } from "../data/runners";
 import { makeFinishOrder } from "./race";
 import { dealConditions } from "./condition";
 
@@ -62,40 +57,21 @@ describe("馬データのオッズ", () => {
   });
 });
 
-describe("16頭モード", () => {
-  const strengths16 = runners16.map((r) => r.strength!);
-
-  it("16頭ぶんの馬が揃っていて、IDが重複しない", () => {
-    expect(runners16).toHaveLength(16);
-    expect(new Set(runners16.map((r) => r.id)).size).toBe(16);
-    expect(new Set(runners16.map((r) => r.name)).size).toBe(16);
-  });
-
-  it("勝率の合計は1で、強い馬ほどオッズが低い", () => {
-    const p = marginalWinProbabilities(strengths16);
-    expect(p.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
-    for (let i = 1; i < runners16.length; i++) {
-      expect(runners16[i].odds).toBeGreaterThanOrEqual(runners16[i - 1].odds);
+describe("調子が分からない人の期待値(単勝)", () => {
+  // 全馬の単勝を1回ずつ買い続けたと仮定して、実際に戻ってくる割合を測る
+  function realizedWinEv(field: typeof runners, trials: number) {
+    const payout = new Array<number>(field.length).fill(0);
+    for (let t = 0; t < trials; t++) {
+      const winner = makeFinishOrder(field, dealConditions(field))[0];
+      const index = field.findIndex((r) => r.id === winner.id);
+      payout[index] += field[index].odds;
     }
-  });
+    return payout.map((p) => p / trials);
+  }
 
-  it("実際にレースを回したときの1着率が、計算上の勝率に近い", () => {
-    const p = marginalWinProbabilities(strengths16);
-    const trials = 30000;
-    const wins = new Array(runners16.length).fill(0);
-    for (let i = 0; i < trials; i++) {
-      const winner = makeFinishOrder(runners16, dealConditions(runners16))[0];
-      wins[runners16.findIndex((r) => r.id === winner.id)]++;
-    }
-    wins.forEach((w, i) => {
-      expect(Math.abs(w / trials - p[i])).toBeLessThan(0.02);
+  it("8頭: どの馬の単勝も、払い戻し率に近い(±0.2)", () => {
+    realizedWinEv(runners, 60000).forEach((ev) => {
+      expect(Math.abs(ev - RTP_BY_TYPE.WIN)).toBeLessThan(0.2);
     });
-  });
-
-  it("大穴の配当は非常に大きくなる(上限なし)", () => {
-    const worst = runners16.slice(-3);
-    expect(payoutMultiplier("TRIFECTA", worst, runners16)).toBeGreaterThan(
-      2000,
-    );
   });
 });

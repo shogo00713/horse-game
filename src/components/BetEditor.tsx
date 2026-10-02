@@ -14,7 +14,6 @@ import styles from "./BetEditor.module.css";
 import RunnerRow from "./RunnerRow";
 import { CONDITION_LABELS, type Conditions } from "../logic/condition";
 import Icon from "./Icon";
-import { frameOf } from "../logic/frames";
 
 // 賭け金の定額ボタン
 const AMOUNT_PRESETS = [
@@ -115,7 +114,6 @@ export default function BetEditor({
               key={r.id}
               runner={r}
               frameNumber={runners.indexOf(r) + 1}
-              frameColor={frameOf(runners.indexOf(r), runners.length)}
               isSelected={isSelected}
               selectionBadge={badge}
               debugLabel={

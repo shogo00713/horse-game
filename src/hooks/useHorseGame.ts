@@ -6,13 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import {
-  MODES,
-  DEFAULT_MODE,
-  isGameMode,
-  storageKey,
-  type GameMode,
-} from "../data/modes";
+import { runners } from "../data/runners";
 import type {
   BetType,
   Phase,
@@ -52,36 +46,26 @@ function createEmptyBet(): Bet {
   };
 }
 
-// ----- モードごとの保存データの読み込み -----
+// ----- 保存データの読み込み -----
 
-function loadMode(): GameMode {
+function loadHistory(): RaceHistory[] {
   try {
-    const saved = localStorage.getItem("horse-mode");
-    return isGameMode(saved) ? saved : DEFAULT_MODE;
-  } catch {
-    return DEFAULT_MODE;
-  }
-}
-
-function loadHistory(mode: GameMode): RaceHistory[] {
-  try {
-    const saved = localStorage.getItem(storageKey("horse-race-history", mode));
+    const saved = localStorage.getItem("horse-race-history");
     return saved ? JSON.parse(saved) : [];
   } catch {
     return [];
   }
 }
 
-function loadRaceNo(mode: GameMode): number {
-  const saved = localStorage.getItem(storageKey("horse-race-no", mode));
+function loadRaceNo(): number {
+  const saved = localStorage.getItem("horse-race-no");
   return saved ? Number(saved) : 1;
 }
 
 // 保存されている調子が正しければ復元し、無ければ新しく配る
-function loadConditions(mode: GameMode): Conditions {
-  const runners = MODES[mode].runners;
+function loadConditions(): Conditions {
   try {
-    const saved = localStorage.getItem(storageKey("horse-conditions", mode));
+    const saved = localStorage.getItem("horse-conditions");
     const parsed: unknown = saved ? JSON.parse(saved) : null;
     if (isValidConditions(parsed, runners)) return parsed;
   } catch {
@@ -91,10 +75,6 @@ function loadConditions(mode: GameMode): Conditions {
 }
 
 export function useHorseGame() {
-  // 遊んでいるモード(8頭 / 16頭)。所持金はモードをまたいで共通
-  const [mode, setMode] = useState<GameMode>(loadMode);
-  const runners = MODES[mode].runners;
-
   const [money, setMoney] = useState(5000);
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
@@ -178,34 +158,12 @@ export function useHorseGame() {
     );
   }
 
-  // 初期値を localStorage から復元(モードごとに別々のキーで保存されている)
-  const [raceHistory, setRaceHistory] = useState<RaceHistory[]>(() =>
-    loadHistory(mode),
-  );
-  const [raceNo, setRaceNo] = useState<number>(() => loadRaceNo(mode));
+  // 初期値を localStorage から復元
+  const [raceHistory, setRaceHistory] = useState<RaceHistory[]>(loadHistory);
+  const [raceNo, setRaceNo] = useState<number>(loadRaceNo);
 
   // 馬の調子(画面には出さない隠しパラメータ。次のレースの着順に影響する)
-  const [conditions, setConditions] = useState<Conditions>(() =>
-    loadConditions(mode),
-  );
-
-  // モードを切り替える(ベット受付中だけ)。ベット内容は破棄し、履歴と調子はそのモードのものに入れ替わる
-  function changeMode(next: GameMode) {
-    if (phase !== "BETTING" || next === mode) return;
-
-    localStorage.setItem("horse-mode", next);
-    setMode(next);
-    setRaceHistory(loadHistory(next));
-    setRaceNo(loadRaceNo(next));
-    setConditions(loadConditions(next));
-
-    setBets([]);
-    setResult([]);
-    setPreviousResult([]);
-    setBetResults([]);
-    setPayout(0);
-    setErrorMessage("");
-  }
+  const [conditions, setConditions] = useState<Conditions>(loadConditions);
 
   // 所持金をリセットする補助関数
   function resetMoney() {
@@ -291,19 +249,13 @@ export function useHorseGame() {
     setRaceNo((n) => n + 1);
 
     // localStorage に保存
-    localStorage.setItem(
-      storageKey("horse-race-history", mode),
-      JSON.stringify(updated),
-    );
-    localStorage.setItem(storageKey("horse-race-no", mode), String(raceNo + 1));
+    localStorage.setItem("horse-race-history", JSON.stringify(updated));
+    localStorage.setItem("horse-race-no", String(raceNo + 1));
 
     // 次のレースに向けて、各馬の調子を配り直す
     const nextConditions = dealConditions(runners, conditions);
     setConditions(nextConditions);
-    localStorage.setItem(
-      storageKey("horse-conditions", mode),
-      JSON.stringify(nextConditions),
-    );
+    localStorage.setItem("horse-conditions", JSON.stringify(nextConditions));
 
     // 次のレースの準備
     setMoney((prev) => prev + payout);
@@ -314,8 +266,6 @@ export function useHorseGame() {
   }
 
   return {
-    mode,
-    changeMode,
     runners,
     money,
     phase,

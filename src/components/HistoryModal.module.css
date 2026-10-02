@@ -239,6 +239,13 @@
   align-items: baseline;
 }
 
+.horseTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .horseName {
   font-size: 20px;
   font-weight: 900;

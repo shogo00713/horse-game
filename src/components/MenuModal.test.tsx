@@ -11,9 +11,6 @@ function renderMenu(overrides: Partial<Parameters<typeof MenuModal>[0]> = {}) {
     canResetMoney: true,
     onResetMoney: vi.fn(),
     onShowTutorial: vi.fn(),
-    mode: "8" as const,
-    onChangeMode: vi.fn(),
-    canChangeMode: true,
     ...overrides,
   };
   render(<MenuModal {...props} />);
@@ -79,20 +76,5 @@ describe("MenuModal", () => {
 
     expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(props.onShowTutorial).toHaveBeenCalledTimes(1);
-  });
-
-  it("せっていにモードの切り替えがあり、押すとモードが変わる", async () => {
-    const props = renderMenu();
-
-    expect(screen.getByRole("radio", { name: "8頭" })).toBeChecked();
-    await userEvent.click(screen.getByRole("radio", { name: "16頭" }));
-
-    expect(props.onChangeMode).toHaveBeenCalledWith("16");
-  });
-
-  it("ベット受付中でなければ、モードは切り替えられない", () => {
-    renderMenu({ canChangeMode: false });
-
-    expect(screen.getByRole("radio", { name: "16頭" })).toBeDisabled();
   });
 });

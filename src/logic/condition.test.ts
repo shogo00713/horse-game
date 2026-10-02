@@ -77,20 +77,96 @@ describe("isValidConditions", () => {
 });
 
 describe("applyCondition", () => {
-  const avg = 0.27;
-
   it("普通なら重みは変わらない", () => {
-    expect(applyCondition(0.5, NORMAL_CONDITION, avg)).toBe(0.5);
+    expect(applyCondition(0.5, NORMAL_CONDITION)).toBe(0.5);
   });
 
-  it("好調側は足し算なので、重みの小さい馬ほど倍率として大きく効く", () => {
-    const small = applyCondition(0.04, 4, avg) / 0.04;
-    const large = applyCondition(0.83, 4, avg) / 0.83;
-    expect(small).toBeGreaterThan(large);
+  it("調子が良いほど重みが大きく、悪いほど小さい", () => {
+    const weights = [0, 1, 2, 3, 4].map((c) =>
+      applyCondition(0.5, c as Condition),
+    );
+    for (let i = 1; i < weights.length; i++) {
+      expect(weights[i]).toBeGreaterThan(weights[i - 1]);
+    }
   });
 
-  it("不調側でも重みは正のまま", () => {
-    expect(applyCondition(0.001, 0, avg)).toBeGreaterThan(0);
+  it("絶不調でも重みは正のまま", () => {
+    expect(applyCondition(0.001, 0)).toBeGreaterThan(0);
+  });
+});
+
+describe("調子の遷移(入れ替え)", () => {
+  const horses = Array.from({ length: 8 }, (_, i) => ({
+    id: String(i + 1),
+    name: `馬${i + 1}`,
+    odds: 5,
+  }));
+  const countsOf = (c: Record<string, Condition>) => {
+    const result = [0, 0, 0, 0, 0];
+    Object.values(c).forEach((level) => result[level]++);
+    return result;
+  };
+
+  it("乱数がすべて入れ替わりを指す場合でも、各調子の頭数は変わらない", () => {
+    const previous = dealConditions(horses);
+    const next = dealConditions(horses, previous, () => 0);
+    expect(countsOf(next)).toEqual(countsOf(previous));
+  });
+
+  it("1頭が1レースで動くのは、最大1段階", () => {
+    for (let trial = 0; trial < 200; trial++) {
+      const previous = dealConditions(horses);
+      const next = dealConditions(horses, previous);
+      horses.forEach((h) => {
+        expect(Math.abs(next[h.id] - previous[h.id])).toBeLessThanOrEqual(1);
+      });
+    }
+  });
+
+  it("入れ替わりやすさは、絶好調↔好調が20%、好調↔普通が30%", () => {
+    // 絶好調1頭・好調2頭の8頭で、何回も遷移させて割合を見る
+    const trials = 20000;
+    let topMoved = 0;
+    let goodMoved = 0;
+    let goodCount = 0;
+    for (let i = 0; i < trials; i++) {
+      const previous = dealConditions(horses);
+      const next = dealConditions(horses, previous);
+      horses.forEach((h) => {
+        if (previous[h.id] === 4 && next[h.id] !== 4) topMoved++;
+        if (previous[h.id] === 3) {
+          goodCount++;
+          if (next[h.id] !== 3) goodMoved++;
+        }
+      });
+    }
+    // 絶好調は20%の確率で入れ替わる
+    expect(topMoved / trials).toBeGreaterThan(0.17);
+    expect(topMoved / trials).toBeLessThan(0.23);
+    // 好調は、上(絶好調側)と下(普通側)の両方に動くので、30%を少し超える
+    expect(goodMoved / goodCount).toBeGreaterThan(0.28);
+    expect(goodMoved / goodCount).toBeLessThan(0.45);
+  });
+
+  it("絶好調の馬は、平均して数レース絶好調が続く", () => {
+    let current = dealConditions(horses);
+    const top = horses.find((h) => current[h.id] === 4)!;
+    let streak = 0;
+    const trials = 5000;
+    let total = 0;
+    let runs = 0;
+    for (let i = 0; i < trials; i++) {
+      current = dealConditions(horses, current);
+      if (current[top.id] === 4) {
+        streak++;
+      } else if (streak > 0) {
+        total += streak;
+        runs++;
+        streak = 0;
+      }
+    }
+    expect(runs).toBeGreaterThan(0);
+    expect(total / runs).toBeGreaterThan(3);
   });
 });
 
@@ -116,6 +192,36 @@ describe("調子が着順に与える影響(統計)", () => {
   });
 });
 
+describe("調子の効き(3着以内に入る確率)", () => {
+  // 実際の配り方(conditionDeck)で、調子ごとに3着以内へ入った割合を数える
+  function top3Rates(field: typeof runners, trials: number) {
+    const entered = [0, 0, 0, 0, 0];
+    const total = [0, 0, 0, 0, 0];
+    for (let t = 0; t < trials; t++) {
+      const conditions = dealConditions(field);
+      const top3 = makeFinishOrder(field, conditions).slice(0, 3);
+      field.forEach((r) => {
+        total[conditions[r.id]]++;
+        if (top3.some((x) => x.id === r.id)) entered[conditions[r.id]]++;
+      });
+    }
+    return entered.map((e, i) => e / total[i]);
+  }
+
+  it("絶好調は高い確率で3着以内に入るが、確実ではない", () => {
+    const rates = top3Rates(runners, 8000);
+    expect(rates[4]).toBeGreaterThan(0.7);
+    expect(rates[4]).toBeLessThan(0.9);
+  });
+
+  it("好調は絶好調より少し低く、絶不調はほぼ3着以内に入らない", () => {
+    const rates = top3Rates(runners, 8000);
+    expect(rates[3]).toBeGreaterThan(0.5);
+    expect(rates[3]).toBeLessThan(rates[4]);
+    expect(rates[0]).toBeLessThan(0.05);
+  });
+});
+
 describe("conditionDeck", () => {
   const count = (deck: Condition[]) => {
     const result = [0, 0, 0, 0, 0];
@@ -127,32 +233,11 @@ describe("conditionDeck", () => {
     expect(count(conditionDeck(8))).toEqual([1, 1, 3, 2, 1]);
   });
 
-  it("16頭なら 絶不調2・不調2・普通6・好調4・絶好調2", () => {
-    expect(count(conditionDeck(16))).toEqual([2, 2, 6, 4, 2]);
-  });
-
   it("頭数と同じ枚数で、良い順に並んでいる", () => {
-    for (const n of [5, 8, 12, 16]) {
+    for (const n of [5, 8, 12]) {
       const deck = conditionDeck(n);
       expect(deck).toHaveLength(n);
       expect(deck).toEqual([...deck].sort((a, b) => b - a));
-    }
-  });
-});
-
-describe("dealConditions - 16頭", () => {
-  it("16頭の内訳で配られ、前を引き継いでも内訳は変わらない", () => {
-    const horses = Array.from({ length: 16 }, (_, i) => ({
-      id: String(i + 1),
-      name: `馬${i + 1}`,
-      odds: 5,
-    }));
-    let current = dealConditions(horses);
-    for (let i = 0; i < 20; i++) {
-      current = dealConditions(horses, current);
-      const counts = [0, 0, 0, 0, 0];
-      Object.values(current).forEach((c) => counts[c]++);
-      expect(counts).toEqual([2, 2, 6, 4, 2]);
     }
   });
 });

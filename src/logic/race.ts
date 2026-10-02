@@ -56,14 +56,11 @@ export function makeFinishOrder(
 ): Runner[] {
   // 各馬に重みを付ける(strength、無ければオッズの逆数 → 調子で補正)
   const baseWeights = runners.map((r) => r.strength ?? 1 / r.odds);
-  const averageWeight =
-    baseWeights.reduce((sum, w) => sum + w, 0) / runners.length;
   const weighted = runners.map((r, i) => ({
     runner: r,
     weight: applyCondition(
       baseWeights[i],
       conditions[r.id] ?? NORMAL_CONDITION,
-      averageWeight,
     ),
   }));
 

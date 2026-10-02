@@ -15,8 +15,6 @@ import PayoutPanel from "./components/PayoutPanel";
 
 export default function App() {
   const {
-    mode,
-    changeMode,
     runners,
     money,
     phase,
@@ -72,9 +70,6 @@ export default function App() {
           canResetMoney={canResetMoney}
           onResetMoney={resetMoney}
           onShowTutorial={tutorial.open}
-          mode={mode}
-          onChangeMode={changeMode}
-          canChangeMode={phase === "BETTING"}
         />
       )}
 

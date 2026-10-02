@@ -1,13 +1,12 @@
 /**
  * オッズと配当を、勝率・的中確率の「近似」から決めるロジック
  *
- * 調子で勝率が変わるが、厳密には計算しない。
- * 各馬の重みを「調子ごとの重みの平均」に置き換えて、着順の決め方
- * (重み付きで1頭ずつ選ぶ)をそのまま当てはめる。頭数が多くても軽く、
- * 調子が分からない人の期待値は、ほぼ払い戻し率に近くなる
+ * 調子で勝率が大きく変わるが、全パターンは数えない。
+ * 固定の乱数で作った調子の配り方を何千通りか試して、その平均を取る。
+ * 頭数が多くても軽く、調子が分からない人の期待値は、ほぼ払い戻し率に近くなる
  */
 
-import { conditionDeck, applyCondition } from "./condition";
+import { conditionDeck, applyCondition, type Condition } from "./condition";
 import type { BetType, Runner } from "../types/game";
 
 // 券種ごとの払い戻し率(調子が分からない人が、平均して戻る割合)
@@ -23,29 +22,55 @@ export const RTP_BY_TYPE: Record<BetType, number> = {
 
 const MIN_ODDS = 1.1;
 
-/**
- * 調子を平均した、各馬の重み
- *
- * 全馬の調子の内訳(conditionDeck)のうち、1頭が引く調子は等確率とみなして平均する
- */
-export function expectedWeights(strengths: number[]): number[] {
-  const deck = conditionDeck(strengths.length);
-  const average = strengths.reduce((sum, w) => sum + w, 0) / strengths.length;
+// ----- 調子の配り方をサンプリングして、確率を求める -----
+// 調子の全パターンは多すぎて数えられないので、固定の乱数でランダムに作った
+// パターンの平均を取る(毎回同じ結果になる)
 
-  return strengths.map(
-    (s) =>
-      deck.reduce<number>(
-        (sum, level) => sum + applyCondition(s, level, average),
-        0,
-      ) / deck.length,
-  );
+// 固定のシードから、毎回同じ並びの乱数を作る
+function seededRandom(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-/** 調子が分からない状態での、各馬の1着になる確率(近似) */
+// 調子の配り方を、ランダムに count 通り作る
+function samplePatterns(horseCount: number, count: number): Condition[][] {
+  const random = seededRandom(20240601);
+  const base = conditionDeck(horseCount);
+  return Array.from({ length: count }, () => {
+    const deck = [...base];
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+  });
+}
+
+// 1つの配り方での、各馬の重み
+function weightsFor(strengths: number[], pattern: Condition[]): number[] {
+  return strengths.map((s, i) => applyCondition(s, pattern[i] ?? 2));
+}
+
+const WIN_SAMPLES = 20000;
+const COMBO_SAMPLES = 3000;
+
+/** 調子が分からない状態での、各馬の1着になる確率(サンプリングによる近似) */
 export function marginalWinProbabilities(strengths: number[]): number[] {
-  const weights = expectedWeights(strengths);
-  const total = weights.reduce((a, b) => a + b, 0);
-  return weights.map((w) => w / total);
+  const totals = new Array<number>(strengths.length).fill(0);
+
+  for (const pattern of samplePatterns(strengths.length, WIN_SAMPLES)) {
+    const w = weightsFor(strengths, pattern);
+    const sum = w.reduce((a, b) => a + b, 0);
+    w.forEach((x, i) => (totals[i] += x / sum));
+  }
+
+  return totals.map((t) => t / WIN_SAMPLES);
 }
 
 /**
@@ -106,40 +131,48 @@ export function hitProbability(
   const cached = hitProbabilityCache.get(key);
   if (cached !== undefined) return cached;
 
-  const weights = expectedWeights(field.map(strengthOf));
+  const strengths = field.map(strengthOf);
   const picked = selected.map((r) => field.findIndex((f) => f.id === r.id));
   const others = field.map((_, i) => i).filter((i) => !picked.includes(i));
 
-  let result: number;
-  switch (betType) {
-    case "WIN":
-    case "EXACTA":
-    case "TRIFECTA":
-      result = orderedProbability(weights, picked);
-      break;
-    case "QUINELLA":
-    case "TRIO":
-      result = permutations(picked).reduce(
-        (sum, order) => sum + orderedProbability(weights, order),
-        0,
-      );
-      break;
-    case "PLACE": {
-      // 3着以内に入る = 1着か、2着か、3着になる確率の合計
-      const me = picked[0];
-      if (field.length <= 3) {
-        result = 1;
-        break;
-      }
-      result = orderedProbability(weights, [me]);
-      for (const a of others) {
-        result += orderedProbability(weights, [a, me]);
-        for (const b of others) {
-          if (a !== b) result += orderedProbability(weights, [a, b, me]);
+  // 1つの配り方での、的中確率
+  function probabilityFor(weights: number[]): number {
+    switch (betType) {
+      case "WIN":
+      case "EXACTA":
+      case "TRIFECTA":
+        return orderedProbability(weights, picked);
+      case "QUINELLA":
+      case "TRIO":
+        return permutations(picked).reduce(
+          (sum, order) => sum + orderedProbability(weights, order),
+          0,
+        );
+      case "PLACE": {
+        // 3着以内に入る = 1着か、2着か、3着になる確率の合計
+        const me = picked[0];
+        let p = orderedProbability(weights, [me]);
+        for (const a of others) {
+          p += orderedProbability(weights, [a, me]);
+          for (const b of others) {
+            if (a !== b) p += orderedProbability(weights, [a, b, me]);
+          }
         }
+        return p;
       }
-      break;
     }
+  }
+
+  let result: number;
+  if (betType === "PLACE" && field.length <= 3) {
+    result = 1;
+  } else {
+    const patterns = samplePatterns(field.length, COMBO_SAMPLES);
+    result =
+      patterns.reduce(
+        (sum, pattern) => sum + probabilityFor(weightsFor(strengths, pattern)),
+        0,
+      ) / patterns.length;
   }
 
   hitProbabilityCache.set(key, result);

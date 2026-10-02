@@ -8,6 +8,7 @@
 import { useState } from "react";
 import type { RaceHistory, Runner } from "../types/game";
 import { horseStats, type HorseStats } from "../logic/history";
+import FrameNumber from "./FrameNumber";
 import styles from "./HistoryModal.module.css";
 
 type Props = {
@@ -76,7 +77,15 @@ function RaceTab({ history }: { history: RaceHistory[] }) {
   );
 }
 
-function HorseCard({ stats, total }: { stats: HorseStats; total: number }) {
+function HorseCard({
+  stats,
+  total,
+  number,
+}: {
+  stats: HorseStats;
+  total: number;
+  number: number;
+}) {
   const { runner, ranks, average, wins, top3 } = stats;
   // 左が古く、右が新しい並びにする(推移を左→右で読めるように)
   const chronological = [...ranks].reverse();
@@ -84,7 +93,10 @@ function HorseCard({ stats, total }: { stats: HorseStats; total: number }) {
   return (
     <section className={styles.horseCard}>
       <header className={styles.horseHeader}>
-        <span className={styles.horseName}>{runner.name}</span>
+        <span className={styles.horseTitle}>
+          <FrameNumber number={number} size="small" />
+          <span className={styles.horseName}>{runner.name}</span>
+        </span>
         <span className={styles.horseOdds}>{runner.odds.toFixed(1)}倍</span>
       </header>
 
@@ -135,10 +147,8 @@ function HorseTab({
     return <p className={styles.empty}>まだレースがありません</p>;
   }
 
-  // 平均着順が良い馬から並べる
-  const stats = horseStats(history, runners).sort(
-    (a, b) => (a.average ?? Infinity) - (b.average ?? Infinity),
-  );
+  // 並べ替えず、馬番の順に並べる(出走馬一覧と同じ並び)
+  const stats = horseStats(history, runners);
 
   return (
     <>
@@ -146,8 +156,13 @@ function HorseTab({
         棒が高いほど上位。右端が最新のレースです。最近の並びから調子を読もう。
       </p>
       <div className={styles.horseGrid}>
-        {stats.map((s) => (
-          <HorseCard key={s.runner.id} stats={s} total={runners.length} />
+        {stats.map((s, i) => (
+          <HorseCard
+            key={s.runner.id}
+            stats={s}
+            total={runners.length}
+            number={i + 1}
+          />
         ))}
       </div>
     </>
