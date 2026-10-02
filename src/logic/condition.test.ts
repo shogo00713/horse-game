@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  conditionDeck,
   NORMAL_CONDITION,
   dealConditions,
   isValidConditions,
@@ -112,5 +113,46 @@ describe("調子が着順に与える影響(統計)", () => {
     const bad = winRate(longshot, 0, 20000);
     expect(good).toBeGreaterThan(normal * 1.5);
     expect(bad).toBeLessThan(normal);
+  });
+});
+
+describe("conditionDeck", () => {
+  const count = (deck: Condition[]) => {
+    const result = [0, 0, 0, 0, 0];
+    deck.forEach((level) => result[level]++);
+    return result;
+  };
+
+  it("8頭なら 絶不調1・不調1・普通3・好調2・絶好調1", () => {
+    expect(count(conditionDeck(8))).toEqual([1, 1, 3, 2, 1]);
+  });
+
+  it("16頭なら 絶不調2・不調2・普通6・好調4・絶好調2", () => {
+    expect(count(conditionDeck(16))).toEqual([2, 2, 6, 4, 2]);
+  });
+
+  it("頭数と同じ枚数で、良い順に並んでいる", () => {
+    for (const n of [5, 8, 12, 16]) {
+      const deck = conditionDeck(n);
+      expect(deck).toHaveLength(n);
+      expect(deck).toEqual([...deck].sort((a, b) => b - a));
+    }
+  });
+});
+
+describe("dealConditions - 16頭", () => {
+  it("16頭の内訳で配られ、前を引き継いでも内訳は変わらない", () => {
+    const horses = Array.from({ length: 16 }, (_, i) => ({
+      id: String(i + 1),
+      name: `馬${i + 1}`,
+      odds: 5,
+    }));
+    let current = dealConditions(horses);
+    for (let i = 0; i < 20; i++) {
+      current = dealConditions(horses, current);
+      const counts = [0, 0, 0, 0, 0];
+      Object.values(current).forEach((c) => counts[c]++);
+      expect(counts).toEqual([2, 2, 6, 4, 2]);
+    }
   });
 });

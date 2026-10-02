@@ -1,11 +1,13 @@
 /**
- * オッズを、実際の勝率から逆算するロジック
+ * オッズと配当を、勝率・的中確率の「近似」から決めるロジック
  *
- * 調子で勝率が変わるため、オッズは「調子が分からない状態での、1着になる確率」から決める。
- * こうすると、調子が見えない人にとっては、どの馬の単勝も払い戻し率が同じ(RTP)になる
+ * 調子で勝率が変わるが、厳密には計算しない。
+ * 各馬の重みを「調子ごとの重みの平均」に置き換えて、着順の決め方
+ * (重み付きで1頭ずつ選ぶ)をそのまま当てはめる。頭数が多くても軽く、
+ * 調子が分からない人の期待値は、ほぼ払い戻し率に近くなる
  */
 
-import { CONDITION_DECK, applyCondition, type Condition } from "./condition";
+import { conditionDeck, applyCondition } from "./condition";
 import type { BetType, Runner } from "../types/game";
 
 // 券種ごとの払い戻し率(調子が分からない人が、平均して戻る割合)
@@ -19,62 +21,38 @@ export const RTP_BY_TYPE: Record<BetType, number> = {
   TRIFECTA: 1.1,
 };
 
-// 調子の配り方の全パターン(同じ調子が複数あるので、重複を除いた並べ方)
-export function dealPatterns(deck: Condition[]): Condition[][] {
-  const sorted = [...deck].sort((a, b) => a - b);
-  const result: Condition[][] = [];
-  const used = new Array(sorted.length).fill(false);
-  const current: Condition[] = [];
-
-  function walk() {
-    if (current.length === sorted.length) {
-      result.push([...current]);
-      return;
-    }
-    for (let i = 0; i < sorted.length; i++) {
-      if (used[i]) continue;
-      // 同じ値の札は、先に使った札がある場合だけ使う(重複パターンを避ける)
-      if (i > 0 && sorted[i] === sorted[i - 1] && !used[i - 1]) continue;
-      used[i] = true;
-      current.push(sorted[i]);
-      walk();
-      current.pop();
-      used[i] = false;
-    }
-  }
-
-  walk();
-  return result;
-}
+const MIN_ODDS = 1.1;
 
 /**
- * 調子が分からない状態での、各馬の1着になる確率
+ * 調子を平均した、各馬の重み
  *
- * 調子の全パターンが同じ確率で起きるものとして平均を取る
+ * 全馬の調子の内訳(conditionDeck)のうち、1頭が引く調子は等確率とみなして平均する
  */
-export function marginalWinProbabilities(strengths: number[]): number[] {
+export function expectedWeights(strengths: number[]): number[] {
+  const deck = conditionDeck(strengths.length);
   const average = strengths.reduce((sum, w) => sum + w, 0) / strengths.length;
-  const patterns = dealPatterns(CONDITION_DECK);
-  const totals = new Array(strengths.length).fill(0);
 
-  for (const pattern of patterns) {
-    const weights = strengths.map((w, i) =>
-      applyCondition(w, pattern[i] ?? 2, average),
-    );
-    const sum = weights.reduce((a, b) => a + b, 0);
-    weights.forEach((w, i) => (totals[i] += w / sum));
-  }
-
-  return totals.map((t) => t / patterns.length);
+  return strengths.map(
+    (s) =>
+      deck.reduce<number>(
+        (sum, level) => sum + applyCondition(s, level, average),
+        0,
+      ) / deck.length,
+  );
 }
 
-const MIN_ODDS = 1.1;
+/** 調子が分からない状態での、各馬の1着になる確率(近似) */
+export function marginalWinProbabilities(strengths: number[]): number[] {
+  const weights = expectedWeights(strengths);
+  const total = weights.reduce((a, b) => a + b, 0);
+  return weights.map((w) => w / total);
+}
 
 /**
  * 強さから、表示するオッズ(単勝の倍率)を決める
  *
  * @param strengths 各馬の基本の強さ
- * @param rtp 払い戻し率(0.9なら、賭け金の平均80%が戻る)
+ * @param rtp 払い戻し率(0.9なら、賭け金の平均90%が戻る)
  */
 export function deriveOdds(strengths: number[], rtp: number): number[] {
   return marginalWinProbabilities(strengths).map((p) =>
@@ -82,7 +60,7 @@ export function deriveOdds(strengths: number[], rtp: number): number[] {
   );
 }
 
-// 着順の確率(重み付きで1頭ずつ選んでいく方式)で、指定した順に上位を占める確率
+// 着順の確率(重み付きで1頭ずつ選ぶ方式)で、指定した順に上位を占める確率
 function orderedProbability(weights: number[], order: number[]): number {
   let remaining = weights.reduce((a, b) => a + b, 0);
   let p = 1;
@@ -108,7 +86,7 @@ function permutations(items: number[]): number[][] {
 const hitProbabilityCache = new Map<string, number>();
 
 /**
- * 調子が分からない状態での、そのベットが的中する確率
+ * 調子が分からない状態での、そのベットが的中する確率(近似)
  *
  * @param betType 賭け方
  * @param selected 選んだ馬
@@ -128,51 +106,42 @@ export function hitProbability(
   const cached = hitProbabilityCache.get(key);
   if (cached !== undefined) return cached;
 
-  const strengths = field.map(strengthOf);
-  const average = strengths.reduce((a, b) => a + b, 0) / strengths.length;
+  const weights = expectedWeights(field.map(strengthOf));
   const picked = selected.map((r) => field.findIndex((f) => f.id === r.id));
   const others = field.map((_, i) => i).filter((i) => !picked.includes(i));
 
-  // 上位 n 頭に入る/入らないの組み合わせごとの確率を、調子の全パターンで平均する
-  const patterns = dealPatterns(CONDITION_DECK);
-  let total = 0;
-
-  for (const pattern of patterns) {
-    const w = strengths.map((s, i) =>
-      applyCondition(s, pattern[i] ?? 2, average),
-    );
-
-    switch (betType) {
-      case "WIN":
-      case "EXACTA":
-      case "TRIFECTA":
-        total += orderedProbability(w, picked);
-        break;
-      case "QUINELLA":
-      case "TRIO":
-        total += permutations(picked).reduce(
-          (sum, order) => sum + orderedProbability(w, order),
-          0,
-        );
-        break;
-      case "PLACE": {
-        // 3着以内に入る = 1着か、2着か、3着になる確率の合計
-        const me = picked[0];
-        let p = orderedProbability(w, [me]);
-        for (const a of others) {
-          p += orderedProbability(w, [a, me]);
-          for (const b of others) {
-            if (a !== b) p += orderedProbability(w, [a, b, me]);
-          }
-        }
-        total += p;
+  let result: number;
+  switch (betType) {
+    case "WIN":
+    case "EXACTA":
+    case "TRIFECTA":
+      result = orderedProbability(weights, picked);
+      break;
+    case "QUINELLA":
+    case "TRIO":
+      result = permutations(picked).reduce(
+        (sum, order) => sum + orderedProbability(weights, order),
+        0,
+      );
+      break;
+    case "PLACE": {
+      // 3着以内に入る = 1着か、2着か、3着になる確率の合計
+      const me = picked[0];
+      if (field.length <= 3) {
+        result = 1;
         break;
       }
+      result = orderedProbability(weights, [me]);
+      for (const a of others) {
+        result += orderedProbability(weights, [a, me]);
+        for (const b of others) {
+          if (a !== b) result += orderedProbability(weights, [a, b, me]);
+        }
+      }
+      break;
     }
   }
 
-  const result =
-    field.length <= 3 && betType === "PLACE" ? 1 : total / patterns.length;
   hitProbabilityCache.set(key, result);
   return result;
 }

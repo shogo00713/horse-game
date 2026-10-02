@@ -473,4 +473,100 @@ describe("useHorseGame", () => {
       expect(result.current.raceHistory).toEqual([]);
     });
   });
+
+  describe("モード(8頭 / 16頭)", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("初期状態は8頭モードで、馬は8頭", () => {
+      const { result } = renderHook(() => useHorseGame());
+
+      expect(result.current.mode).toBe("8");
+      expect(result.current.runners).toHaveLength(8);
+    });
+
+    it("16頭モードに切り替えると、馬が16頭になり、ベット内容は破棄される", () => {
+      const { result } = renderHook(() => useHorseGame());
+      addBetAndGetId(result);
+
+      act(() => {
+        result.current.changeMode("16");
+      });
+
+      expect(result.current.mode).toBe("16");
+      expect(result.current.runners).toHaveLength(16);
+      expect(result.current.bets).toHaveLength(0);
+    });
+
+    it("所持金はモードをまたいで共通", () => {
+      const { result } = renderHook(() => useHorseGame());
+      const before = result.current.money;
+
+      act(() => {
+        result.current.changeMode("16");
+      });
+
+      expect(result.current.money).toBe(before);
+    });
+
+    it("選んだモードは、次に開いたときも引き継がれる", () => {
+      const first = renderHook(() => useHorseGame());
+      act(() => {
+        first.result.current.changeMode("16");
+      });
+
+      const second = renderHook(() => useHorseGame());
+
+      expect(second.result.current.mode).toBe("16");
+    });
+
+    it("履歴と調子は、モードごとに別のキーで保存される", () => {
+      const { result } = renderHook(() => useHorseGame());
+
+      // 8頭モードで1レース終える
+      act(() => {
+        result.current.accept();
+      });
+      expect(localStorage.getItem("horse-race-history")).not.toBeNull();
+      expect(localStorage.getItem("horse-race-history:16")).toBeNull();
+
+      // 16頭モードに移ると、履歴は空から始まる
+      act(() => {
+        result.current.changeMode("16");
+      });
+      expect(result.current.raceHistory).toEqual([]);
+
+      act(() => {
+        result.current.accept();
+      });
+      expect(localStorage.getItem("horse-race-history:16")).not.toBeNull();
+      expect(localStorage.getItem("horse-conditions:16")).not.toBeNull();
+
+      // 8頭モードに戻ると、8頭の履歴が復元される
+      act(() => {
+        result.current.changeMode("8");
+      });
+      expect(result.current.raceHistory).toHaveLength(1);
+      expect(result.current.runners).toHaveLength(8);
+    });
+
+    it("ベット受付中以外は、モードを切り替えられない", () => {
+      const { result } = renderHook(() => useHorseGame());
+      const id = addBetAndGetId(result);
+      act(() => {
+        result.current.toggleRunner(id, result.current.runners[0]);
+      });
+      act(() => {
+        result.current.go();
+      });
+      expect(result.current.phase).toBe("DRAWING");
+
+      act(() => {
+        result.current.changeMode("16");
+      });
+
+      expect(result.current.mode).toBe("8");
+    });
+  });
 });

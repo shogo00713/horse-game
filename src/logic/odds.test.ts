@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { marginalWinProbabilities, deriveOdds, RTP_BY_TYPE } from "./odds";
-import { runners } from "../data/runners";
+import {
+  marginalWinProbabilities,
+  deriveOdds,
+  payoutMultiplier,
+  RTP_BY_TYPE,
+} from "./odds";
+import { runners, runners16 } from "../data/runners";
 import { makeFinishOrder } from "./race";
 import { dealConditions } from "./condition";
 
@@ -54,5 +59,43 @@ describe("馬データのオッズ", () => {
     wins.forEach((w, i) => {
       expect(Math.abs(w / trials - p[i])).toBeLessThan(0.02);
     });
+  });
+});
+
+describe("16頭モード", () => {
+  const strengths16 = runners16.map((r) => r.strength!);
+
+  it("16頭ぶんの馬が揃っていて、IDが重複しない", () => {
+    expect(runners16).toHaveLength(16);
+    expect(new Set(runners16.map((r) => r.id)).size).toBe(16);
+    expect(new Set(runners16.map((r) => r.name)).size).toBe(16);
+  });
+
+  it("勝率の合計は1で、強い馬ほどオッズが低い", () => {
+    const p = marginalWinProbabilities(strengths16);
+    expect(p.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+    for (let i = 1; i < runners16.length; i++) {
+      expect(runners16[i].odds).toBeGreaterThanOrEqual(runners16[i - 1].odds);
+    }
+  });
+
+  it("実際にレースを回したときの1着率が、計算上の勝率に近い", () => {
+    const p = marginalWinProbabilities(strengths16);
+    const trials = 30000;
+    const wins = new Array(runners16.length).fill(0);
+    for (let i = 0; i < trials; i++) {
+      const winner = makeFinishOrder(runners16, dealConditions(runners16))[0];
+      wins[runners16.findIndex((r) => r.id === winner.id)]++;
+    }
+    wins.forEach((w, i) => {
+      expect(Math.abs(w / trials - p[i])).toBeLessThan(0.02);
+    });
+  });
+
+  it("大穴の配当は非常に大きくなる(上限なし)", () => {
+    const worst = runners16.slice(-3);
+    expect(payoutMultiplier("TRIFECTA", worst, runners16)).toBeGreaterThan(
+      2000,
+    );
   });
 });

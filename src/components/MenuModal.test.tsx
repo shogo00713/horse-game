@@ -11,6 +11,9 @@ function renderMenu(overrides: Partial<Parameters<typeof MenuModal>[0]> = {}) {
     canResetMoney: true,
     onResetMoney: vi.fn(),
     onShowTutorial: vi.fn(),
+    mode: "8" as const,
+    onChangeMode: vi.fn(),
+    canChangeMode: true,
     ...overrides,
   };
   render(<MenuModal {...props} />);
@@ -18,8 +21,24 @@ function renderMenu(overrides: Partial<Parameters<typeof MenuModal>[0]> = {}) {
 }
 
 describe("MenuModal", () => {
-  it("最初は「あそびかた」が表示され、券種の説明が載っている", () => {
+  it("開いたときは「せってい」が先に表示される", () => {
     renderMenu();
+
+    expect(screen.getByText("所持金リセット")).toBeInTheDocument();
+    expect(screen.queryByText("券種のちがい")).toBeNull();
+  });
+
+  it("タブは「せってい」「あそびかた」の順に並ぶ", () => {
+    renderMenu();
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]).toHaveTextContent("せってい");
+    expect(tabs[1]).toHaveTextContent("あそびかた");
+  });
+
+  it("「あそびかた」には券種の説明が載っている", async () => {
+    renderMenu();
+    await userEvent.click(screen.getByRole("tab", { name: "あそびかた" }));
 
     expect(screen.getByText("券種のちがい")).toBeInTheDocument();
     expect(screen.getByText("3連単")).toBeInTheDocument();
@@ -60,5 +79,20 @@ describe("MenuModal", () => {
 
     expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(props.onShowTutorial).toHaveBeenCalledTimes(1);
+  });
+
+  it("せっていにモードの切り替えがあり、押すとモードが変わる", async () => {
+    const props = renderMenu();
+
+    expect(screen.getByRole("radio", { name: "8頭" })).toBeChecked();
+    await userEvent.click(screen.getByRole("radio", { name: "16頭" }));
+
+    expect(props.onChangeMode).toHaveBeenCalledWith("16");
+  });
+
+  it("ベット受付中でなければ、モードは切り替えられない", () => {
+    renderMenu({ canChangeMode: false });
+
+    expect(screen.getByRole("radio", { name: "16頭" })).toBeDisabled();
   });
 });

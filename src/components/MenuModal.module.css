@@ -54,3 +54,28 @@
   white-space: nowrap;
   font-weight: 700;
 }
+
+/* モードの切り替え */
+.modeInfo {
+  flex: 1;
+}
+
+.modeButtons {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.setting .modeButton {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  display: block;
+}
+
+.setting .modeButtonActive,
+.setting .modeButtonActive:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}

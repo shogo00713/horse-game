@@ -7,6 +7,7 @@
 
 import type { Runner } from "../types/game";
 import FrameNumber from "./FrameNumber";
+import { frameOf } from "../logic/frames";
 import styles from "./EntryList.module.css";
 
 type EntryListProps = {
@@ -31,7 +32,7 @@ export default function EntryList({ runners, lastResult }: EntryListProps) {
 
         return (
           <div key={runner.id} data-testid="entry-row" className={styles.row}>
-            <FrameNumber number={i + 1} />
+            <FrameNumber number={i + 1} frame={frameOf(i, runners.length)} />
             <span className={styles.horse} aria-hidden="true" />
             <div className={styles.info}>
               <span className={styles.name}>{runner.name}</span>

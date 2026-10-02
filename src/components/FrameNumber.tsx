@@ -7,19 +7,21 @@
 import styles from "./FrameNumber.module.css";
 
 type FrameNumberProps = {
-  number: number;
+  number: number; // 表示する番号(馬番)
+  frame?: number; // 色を決める枠番(省略時は馬番と同じ)
   size?: "normal" | "small";
 };
 
 export default function FrameNumber({
   number,
+  frame = number,
   size = "normal",
 }: FrameNumberProps) {
   return (
     <span
       className={[
         styles.frame,
-        styles[`frame${number}`],
+        styles[`frame${frame}`],
         size === "small" && styles.small,
       ]
         .filter(Boolean)
