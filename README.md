@@ -11,8 +11,6 @@ React + TypeScript で実装した、競馬シミュレーションゲームで�
 
 https://horse-game-xi.vercel.app/
 
-(現在一時停止中。近日中に再公開予定)
-
 ---
 
 ## 🧠 概要
