@@ -4,7 +4,12 @@
  * 賭け方ごとに選択できる馬の頭数が異なるので、それを正しく判定する関数を提供する
  */
 
-import type { BetType, BetSelection, Runner } from "../types/game";
+import type { BetType, BetSelection, Runner, Phase } from "../types/game";
+
+// 所持金リセットボタンを押せるかどうか
+export function canResetMoney(phase: Phase, money: number): boolean {
+  return phase === "BETTING" && money <= 500;
+}
 
 // 賭け方ごとに選択できる馬の頭数
 export function maxSelectable(betType: BetType): number {

@@ -36,7 +36,6 @@ export default function BetPanel({
   onChangeBetType,
   onChangeBet,
   onSelectRunner,
-  onSetTotalBet,
   onSubmit,
 }: BetPanelProps) {
   // ベット受付中かどうか
@@ -113,13 +112,6 @@ export default function BetPanel({
           <div className="bet_amount unit">円</div>
         </div>
 
-        <button
-          className="bet_panel_total_bet_button"
-          disabled={isNotBetting}
-          onClick={onSetTotalBet}
-        >
-          全額賭ける
-        </button>
       </div>
 
       <button

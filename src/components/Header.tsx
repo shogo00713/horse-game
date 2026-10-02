@@ -1,14 +1,19 @@
 type HeaderProps = {
   money: number;
   onResetMoney: () => void;
+  canResetMoney: boolean;
 };
 
-export default function Header({ money, onResetMoney }: HeaderProps) {
+export default function Header({ money, onResetMoney, canResetMoney }: HeaderProps) {
   return (
     <header>
       <div className="header_inner">
         <h1 className="header_title">競馬ゲーム</h1>
-        <button className="reset_button" onClick={onResetMoney}>
+        <button 
+          className="reset_button"
+          onClick={onResetMoney}
+          disabled={!canResetMoney}
+        >
           所持金リセット
         </button>
         <h1 className="header_sub">

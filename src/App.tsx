@@ -22,6 +22,7 @@ export default function App() {
     betType,
     errorMessage,
     raceHistory,
+    canResetMoney,
     setBet,
     changeBetType,
     toggleRunner,
@@ -42,7 +43,7 @@ export default function App() {
       />
 
       {/* ヘッダー部分 */}
-      <Header money={money} onResetMoney={resetMoney} />
+      <Header money={money} onResetMoney={resetMoney} canResetMoney={canResetMoney} />
 
       {/* メイン部分 */}
       <main>

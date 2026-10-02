@@ -10,7 +10,7 @@ import { runners } from "../data/runners";
 import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
-import { maxSelectable, buildBetSelection } from "../logic/betRules";
+import { maxSelectable, buildBetSelection, canResetMoney } from "../logic/betRules";
 
 export function useHorseGame() {
   const [money, setMoney] = useState(5000);
@@ -78,8 +78,14 @@ export function useHorseGame() {
 
   // 所持金をリセットする補助関数
   function resetMoney() {
-    setMoney(5000);
-  }
+    if (canResetMoney(phase, money)) {
+      if (window.confirm("所持金を2000円にリセットします。よろしいですか？")) {
+        setTimeout(() => {
+          setMoney(2000);
+        }, 2000);
+      }
+    }
+  };
 
   function go() {
     // ----- 抽選前 -----
@@ -156,6 +162,7 @@ export function useHorseGame() {
     betType,
     errorMessage,
     raceHistory,
+    canResetMoney : canResetMoney(phase, money),
     setBet,
     changeBetType,
     setSelectedRunners,

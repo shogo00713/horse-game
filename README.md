@@ -54,7 +54,7 @@ src/
     Header.tsx
     ResultPanel.tsx    # 結果表示画面
     BetPanel.tsx       # ベット画面
-    RunnerButton.tsx   
+    RunnerButton.tsx
     PayoutPanel.tsx    # 払い戻し表示画面
     HistoryModal.tsx   # 過去レース履歴画面
   App.css

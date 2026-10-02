@@ -1,10 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { maxSelectable, isOrderedBetType, buildBetSelection } from "./betRules";
+import { maxSelectable, isOrderedBetType, buildBetSelection, canResetMoney } from "./betRules";
 import type { Runner } from "../types/game";
 
 const phoenix: Runner = { id: "phoenix", name: "フェニックス", odds: 1.2 };
 const storm: Runner = { id: "storm", name: "ストームエッジ", odds: 2.0 };
 const thunder: Runner = { id: "thunder", name: "サンダーボルト", odds: 3.0 };
+
+  describe("canResetMoney", () => {
+    it("BETTING中かつ500円以下ならtrue", () => {
+      expect(canResetMoney("BETTING", 500)).toBe(true);
+      expect(canResetMoney("BETTING", 0)).toBe(true);
+    });
+    it("500円を超えていればfalse", () => {
+      expect(canResetMoney("BETTING", 501)).toBe(false);
+    });
+    it("BETTING中でなければfalse", () => {
+      expect(canResetMoney("DRAWING", 100)).toBe(false);
+    });
+  });
 
 describe("maxSelectable", () => {
   it("単勝・複勝は1頭", () => {

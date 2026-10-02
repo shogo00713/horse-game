@@ -77,15 +77,6 @@ describe("BetPanel", () => {
     expect(onSelectRunner).toHaveBeenCalledWith(runners[0]);
   });
 
-  it("全額賭けるボタンで onSetTotalBet が呼ばれる", async () => {
-    const onSetTotalBet = vi.fn();
-    renderBetPanel({ onSetTotalBet });
-
-    await userEvent.click(screen.getByRole("button", { name: "全額賭ける" }));
-
-    expect(onSetTotalBet).toHaveBeenCalledOnce();
-  });
-
   it("確定ボタンで onSubmit が呼ばれる", async () => {
     const onSubmit = vi.fn();
     // 単勝は1頭選んでいないとボタンが無効になるので、選択済み状態で描画する

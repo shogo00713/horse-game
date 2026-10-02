@@ -4,7 +4,6 @@ import { useHorseGame } from "./useHorseGame";
 import type { Runner } from "../types/game";
 import type { RaceHistory } from "../types/game";
 
-
 const phoenix: Runner = { id: "phoenix", name: "フェニックス", odds: 1.2 };
 const storm: Runner = { id: "storm", name: "ストームエッジ", odds: 2.0 };
 const thunder: Runner = { id: "thunder", name: "サンダーボルト", odds: 3.0 };
@@ -77,6 +76,25 @@ describe("useHorseGame", () => {
     });
   });
 
+  describe("ResqetMoney", () => {
+    it("所持金が500円を超えている初期状態では、リセットできない", () => {
+      const { result } = renderHook(() => useHorseGame());
+      expect(result.current.canResetMoney).toBe(false);
+    });
+
+    it("リセットできない状態で呼んでも、確認ダイアログすら出ない", () => {
+      const confirmSpy = vi.spyOn(window, "confirm");
+      const { result } = renderHook(() => useHorseGame());
+
+      act(() => {
+        result.current.resetMoney();
+      });
+
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(result.current.money).toBe(5000); // 変化していない
+    });
+  });
+
   describe("changeBetType", () => {
     it("betTypeを変えると、選択中の馬がリセットされる", () => {
       const { result } = renderHook(() => useHorseGame());
@@ -106,33 +124,33 @@ describe("useHorseGame", () => {
       expect(result.current.raceHistory[0].raceNo).toBe(1);
     });
 
-  it("9回acceptすると、履歴は8件までしか残らない(一番古いものが消える)", () => {
-    const { result } = renderHook(() => useHorseGame());
+    it("9回acceptすると、履歴は8件までしか残らない(一番古いものが消える)", () => {
+      const { result } = renderHook(() => useHorseGame());
 
-    // accept() を9回繰り返す
-    for (let i = 0; i < 9; i++) {
+      // accept() を9回繰り返す
+      for (let i = 0; i < 9; i++) {
+        act(() => {
+          result.current.accept();
+        });
+      }
+
+      expect(result.current.raceHistory).toHaveLength(8);
+
+      // 1回目(raceNo: 1)が一番古いので、もう含まれていないはず
+      const raceNos = result.current.raceHistory.map((h) => h.raceNo);
+      expect(raceNos).not.toContain(1);
+    });
+
+    it("acceptすると、localStorageにも保存される", () => {
+      const { result } = renderHook(() => useHorseGame());
+
       act(() => {
         result.current.accept();
       });
-    }
 
-    expect(result.current.raceHistory).toHaveLength(8);
-
-    // 1回目(raceNo: 1)が一番古いので、もう含まれていないはず
-    const raceNos = result.current.raceHistory.map((h) => h.raceNo);
-    expect(raceNos).not.toContain(1);
-  });
-
-  it("acceptすると、localStorageにも保存される", () => {
-    const { result } = renderHook(() => useHorseGame());
-
-    act(() => {
-      result.current.accept();
+      const saved = JSON.parse(localStorage.getItem("horse-race-history")!);
+      expect(saved).toHaveLength(1);
     });
-
-    const saved = JSON.parse(localStorage.getItem("horse-race-history")!);
-    expect(saved).toHaveLength(1);
-    }); 
   });
 
   describe("go", () => {
@@ -146,10 +164,11 @@ describe("useHorseGame", () => {
         result.current.go();
       });
 
-
-      expect(result.current.errorMessage).toBe("賭ける金額を1円以上で入力してください。");
-        expect(result.current.phase).toBe("BETTING");
-      });
+      expect(result.current.errorMessage).toBe(
+        "賭ける金額を1円以上で入力してください。",
+      );
+      expect(result.current.phase).toBe("BETTING");
+    });
 
     it("所持金より多く賭けようとすると、エラーメッセージが出る", () => {
       const { result } = renderHook(() => useHorseGame());
@@ -178,7 +197,6 @@ describe("useHorseGame", () => {
   });
 
   describe("goのタイマー関連", () => {
-
     beforeEach(() => {
       vi.useFakeTimers();
     });
@@ -232,7 +250,6 @@ describe("useHorseGame", () => {
     });
   });
 
-
   describe("初期化時のlocalStorage復元", () => {
     it("保存されている履歴があれば、それを復元する", () => {
       const savedHistory: RaceHistory[] = [
@@ -260,6 +277,4 @@ describe("useHorseGame", () => {
       expect(result.current.raceHistory).toEqual([]);
     });
   });
-
-
 });

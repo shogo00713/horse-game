@@ -76,7 +76,9 @@ function calculateWeightedOdds(
   selected: Runner[],
   weights: number[],
 ): number {
-  return base + selected.reduce((sum, r, i) => sum + (r.odds - 1) * weights[i], 0);
+  return (
+    base + selected.reduce((sum, r, i) => sum + (r.odds - 1) * weights[i], 0)
+  );
 }
 
 // 単勝計算
@@ -121,7 +123,11 @@ function calculateTrifectaPayout(
   result: Runner[],
 ): number {
   // 3連単のオッズ計算式
-  const trifectaOdds = calculateWeightedOdds(40, threeSelected, [4.0, 2.5, 2.0]);
+  const trifectaOdds = calculateWeightedOdds(
+    40,
+    threeSelected,
+    [4.0, 2.5, 2.0],
+  );
   const isHit = isSameOrder(threeSelected, result, 3);
   return isHit ? Math.floor(trifectaOdds * bet) : 0;
 }
