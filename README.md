@@ -1,6 +1,6 @@
 # 🐎 Horse Game (競馬ゲーム)
 
-![CI](https://github.com/shogo0713/horsegame/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/shogo00713/horsegame/actions/workflows/ci.yml/badge.svg)
 
 React + TypeScript で実装した、競馬シミュレーションゲームです。  
 プレイヤーは所持金を元に馬と賭け方を選び、レース結果に応じた配当を獲得します。
