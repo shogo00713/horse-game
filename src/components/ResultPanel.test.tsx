@@ -7,49 +7,80 @@ import type { Runner } from "../types/game";
 
 // テスト用の馬データ
 const runners: Runner[] = [
-  { id: "phoenix", name: "フェニックス", odds: 1.2 },
+  {
+    id: "phoenix",
+    name: "フェニックス",
+    odds: 1.2,
+    description: "圧倒的なスピードで駆け抜ける本命馬",
+  },
   { id: "storm", name: "ストームエッジ", odds: 2.0 },
 ];
 
 // テスト用の着順データ
 const result: Runner[] = [
-  { id: "phoenix", name: "フェニックス", odds: 1.2 },
+  {
+    id: "phoenix",
+    name: "フェニックス",
+    odds: 1.2,
+    description: "圧倒的なスピードで駆け抜ける本命馬",
+  },
   { id: "storm", name: "ストームエッジ", odds: 2.0 },
-];
-const previousResult: Runner[] = [
-  { id: "storm", name: "ストームエッジ", odds: 2.0 },
-  { id: "phoenix", name: "フェニックス", odds: 1.2 },
 ];
 
 describe("ResultPanel", () => {
-  it("BETTINGフェーズの場合、現在の着順は非表示、前回の着順は表示", () => {
+  it("BETTINGフェーズの場合、出走馬一覧(枠番・馬名・一言紹介・オッズ)が表示される", () => {
     render(
       <ResultPanel
         phase="BETTING"
         runners={runners}
-        result={result}
-        previousResult={previousResult}
+        result={[]}
         betMarks={{}}
         onSkip={() => {}}
       />,
     );
 
     expect(screen.getByText("現在 : ベット受付中")).toBeInTheDocument();
-    expect(screen.getByText("1位:")).toBeInTheDocument();
-    expect(screen.getByText("2位:")).toBeInTheDocument();
-    expect(screen.getAllByText("-")).toHaveLength(runners.length);
+    expect(screen.getByText("出走馬一覧")).toBeInTheDocument();
+    expect(screen.queryByText("着順")).toBeNull();
+    expect(screen.queryByText("前回結果")).toBeNull();
 
-    const previousLines = screen.getAllByTestId("finish-line");
-    previousLines.forEach((line) => {
-      expect(line).not.toHaveTextContent("フェニックス");
-      expect(line).not.toHaveTextContent("ストームエッジ");
-    });
+    const rows = screen.getAllByTestId("entry-row");
+    expect(rows).toHaveLength(runners.length);
+    expect(rows[0]).toHaveTextContent("フェニックス");
+    expect(rows[0]).toHaveTextContent("圧倒的なスピード");
+    expect(rows[0]).toHaveTextContent("1.2");
+    expect(rows[1]).toHaveTextContent("ストームエッジ");
+    expect(rows[1]).toHaveTextContent("2.0");
+  });
 
-    const previousResultLines = screen.getAllByTestId("previous-result-line");
-    expect(previousResultLines[0]).toHaveTextContent("1位:");
-    expect(previousResultLines[0]).toHaveTextContent("ストームエッジ");
-    expect(previousResultLines[1]).toHaveTextContent("2位:");
-    expect(previousResultLines[1]).toHaveTextContent("フェニックス");
+  it("BETTINGフェーズでは、前回3位以内の馬に「前回n位」の印が付く", () => {
+    render(
+      <ResultPanel
+        phase="BETTING"
+        runners={runners}
+        result={[runners[1], runners[0]]} // 前回は storm が1着、phoenix が2着
+        betMarks={{}}
+        onSkip={() => {}}
+      />,
+    );
+
+    const [phoenixRow, stormRow] = screen.getAllByTestId("entry-row");
+    expect(phoenixRow).toHaveTextContent("前回2位");
+    expect(stormRow).toHaveTextContent("前回1位");
+  });
+
+  it("前回のレースが無ければ、印は付かない", () => {
+    render(
+      <ResultPanel
+        phase="BETTING"
+        runners={runners}
+        result={[]}
+        betMarks={{}}
+        onSkip={() => {}}
+      />,
+    );
+
+    expect(screen.queryByText(/前回/)).toBeNull();
   });
 
   describe("DRAWINGフェーズ(抽選演出)", () => {
@@ -67,7 +98,6 @@ describe("ResultPanel", () => {
           phase="DRAWING"
           runners={runners}
           result={result}
-          previousResult={previousResult}
           betMarks={{}}
           onSkip={onSkip}
         />,
@@ -81,11 +111,6 @@ describe("ResultPanel", () => {
 
       // 順位枠の中は空(名前はプレート側に出る)
       screen.getAllByTestId("finish-line").forEach((line) => {
-        expect(line).not.toHaveTextContent("フェニックス");
-        expect(line).not.toHaveTextContent("ストームエッジ");
-      });
-
-      screen.getAllByTestId("previous-result-line").forEach((line) => {
         expect(line).not.toHaveTextContent("フェニックス");
         expect(line).not.toHaveTextContent("ストームエッジ");
       });
@@ -125,7 +150,6 @@ describe("ResultPanel", () => {
           phase="DRAWING"
           runners={runners}
           result={result}
-          previousResult={previousResult}
           betMarks={{ storm: [1, 3] }}
           onSkip={() => {}}
         />,
@@ -157,33 +181,26 @@ describe("ResultPanel", () => {
     });
   });
 
-  it("PAYOUTフェーズの場合、現在の着順は表示、前回の着順も表示", () => {
+  it("PAYOUTフェーズの場合、着順が表示され、前回結果の欄は無い", () => {
     render(
       <ResultPanel
         phase="PAYOUT"
         runners={runners}
         result={result}
-        previousResult={previousResult}
         betMarks={{}}
         onSkip={() => {}}
       />,
     );
 
     const [firstLine, secondLine] = screen.getAllByTestId("finish-line");
-    const [previousFirstLine, previousSecondLine] = screen.getAllByTestId(
-      "previous-result-line",
-    );
 
     expect(screen.getByText("現在 : 払い戻し中")).toBeInTheDocument();
+    expect(screen.getByText("着順")).toBeInTheDocument();
+    expect(screen.queryByText("前回結果")).toBeNull();
 
     expect(firstLine).toHaveTextContent("1位:");
     expect(firstLine).toHaveTextContent("フェニックス");
     expect(secondLine).toHaveTextContent("2位:");
     expect(secondLine).toHaveTextContent("ストームエッジ");
-
-    expect(previousFirstLine).toHaveTextContent("1位:");
-    expect(previousFirstLine).toHaveTextContent("ストームエッジ");
-    expect(previousSecondLine).toHaveTextContent("2位:");
-    expect(previousSecondLine).toHaveTextContent("フェニックス");
   });
 });

@@ -32,20 +32,33 @@
   color: var(--muted);
 }
 
-.select {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 15px;
+/* 券種の選択(横に並べたボタン。券種が増えても折り返して並ぶ) */
+.typeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.typeButton {
+  flex: 1 1 0;
+  min-width: 84px;
+  padding: 12px 8px;
+  font-size: 16px;
   font-weight: 700;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
   background: var(--bg);
   color: var(--text);
 }
 
-.select:focus {
-  outline: none;
+.typeButton:hover {
+  background: var(--selected-bg);
+}
+
+.typeButtonActive,
+.typeButtonActive:hover {
+  background: var(--accent);
   border-color: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* 残りの高さをすべて使い、足りなければ中でスクロールする */
@@ -61,26 +74,61 @@
   font-weight: 700;
 }
 
-.amountRow {
+/* 賭け金: 定額ボタン3つ + 好きな額の入力欄(いちばん右) */
+.amountGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.amountButton {
+  flex: 1 1 0;
+  min-width: 84px;
+  padding: 12px 8px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.amountButton:hover {
+  background: var(--selected-bg);
+}
+
+.amountButtonActive,
+.amountButtonActive:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.customAmount {
+  flex: 2 1 160px;
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
 }
 
-.amountRow input[type="text"] {
+.customAmount:focus-within,
+.customAmountActive {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.customAmount input[type="text"] {
   flex: 1;
-  padding: 10px 12px;
+  min-width: 0;
+  padding: 10px 0;
   font-size: 18px;
   font-weight: 700;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
+  border: none;
+  background: transparent;
   color: var(--text);
   outline: none;
-}
-
-.amountRow input[type="text"]:focus {
-  border-color: var(--accent);
 }
 
 .footer {

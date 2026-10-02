@@ -22,14 +22,12 @@ export default function App() {
     bets,
     betResults,
     result,
-    previousResult,
     conditions,
     errorMessage,
     raceHistory,
     canResetMoney,
     canSubmit,
     totalBetAmount,
-    maxPayout,
     maxBets,
     addBet,
     removeBet,
@@ -92,7 +90,6 @@ export default function App() {
             phase={phase}
             runners={runners}
             result={result}
-            previousResult={previousResult}
             betMarks={betMarks}
             maxBets={maxBets}
             onSkip={skipDrawing}
@@ -122,7 +119,6 @@ export default function App() {
               conditions={conditions}
               maxBets={maxBets}
               totalBetAmount={totalBetAmount}
-              maxPayout={maxPayout}
               canSubmit={canSubmit}
               onAddBet={addBet}
               onRemoveBet={removeBet}

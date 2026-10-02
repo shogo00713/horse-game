@@ -1,0 +1,122 @@
+.list {
+  display: grid;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.headOdds {
+  text-align: right;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* 馬のアイコン。assets/horse.svg を差し替えれば、ここも変わる */
+.horse {
+  flex: none;
+  width: 36px;
+  height: 28px;
+  background: currentColor;
+  color: var(--text);
+  -webkit-mask: url("../assets/horse.svg") center / contain no-repeat;
+  mask: url("../assets/horse.svg") center / contain no-repeat;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 前回3位以内の印 */
+.lastRank {
+  flex: none;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--tone);
+  border: 1px solid var(--tone);
+}
+
+.toneGold {
+  --tone: rgba(191, 141, 0, 1);
+}
+
+.toneSilver {
+  --tone: rgba(122, 130, 146, 1);
+}
+
+.toneBronze {
+  --tone: rgba(158, 92, 56, 1);
+}
+
+.odds {
+  flex: none;
+  width: 3.5em;
+  text-align: right;
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* スマホ幅: アイコンを隠して、馬名が折り返さないようにする */
+@media (max-width: 600px) {
+  .horse {
+    display: none;
+  }
+
+  .row {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .head {
+    padding: 8px 12px;
+    grid-template-columns: 40px 1fr auto;
+  }
+
+  .name {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  .description {
+    font-size: 11px;
+  }
+
+  .odds {
+    font-size: 17px;
+  }
+}

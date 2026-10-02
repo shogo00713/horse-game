@@ -13,7 +13,8 @@ import BetSummary from "./BetSummary";
 import BetEditor from "./BetEditor";
 import Icon from "./Icon";
 import type { Conditions } from "../logic/condition";
-import { isValidBet } from "../logic/betRules";
+import { isValidBet, buildBetSelection } from "../logic/betRules";
+import { calculateMaxPayout } from "../logic/payout";
 
 // 親コンポーネントから渡されるprops
 type BetPanelProps = {
@@ -23,7 +24,6 @@ type BetPanelProps = {
   conditions?: Conditions; // デバッグ表示用(開発時のみ使う)
   maxBets: number;
   totalBetAmount: number;
-  maxPayout: number;
   canSubmit: boolean;
 
   onAddBet: () => string | null;
@@ -41,7 +41,6 @@ export default function BetPanel({
   conditions,
   maxBets,
   totalBetAmount,
-  maxPayout,
   canSubmit,
   onAddBet,
   onRemoveBet,
@@ -114,6 +113,15 @@ export default function BetPanel({
                 key={bet.id}
                 bet={bet}
                 index={index}
+                maxPayout={
+                  isValidBet(bet)
+                    ? calculateMaxPayout(
+                        Number(bet.betstr),
+                        buildBetSelection(bet.betType, bet.selectedRunners),
+                        runners,
+                      )
+                    : null
+                }
                 disabled={isNotBetting}
                 onEdit={() => setEditingBetId(bet.id)}
                 onRemove={() => onRemoveBet(bet.id)}
@@ -141,15 +149,6 @@ export default function BetPanel({
       <div className={styles.row}>
         <span>合計BET額</span>
         <span>¥{totalBetAmount}</span>
-      </div>
-      <div className={styles.payoutBox}>
-        <span className={styles.payoutLabel}>
-          <Icon name="coins" /> <span>最大払戻</span>
-        </span>
-        <span className={styles.payoutValue}>¥{maxPayout}</span>
-        <span className={styles.payoutNote}>
-          全部当たればこの額が手に入る！
-        </span>
       </div>
 
       <button

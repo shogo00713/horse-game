@@ -27,6 +27,7 @@
 }
 
 .runnerName {
+  flex: 1;
   font-weight: 700;
 }
 

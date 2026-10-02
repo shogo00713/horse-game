@@ -11,6 +11,7 @@ import styles from "./BetSummary.module.css";
 type BetSummaryProps = {
   bet: Bet;
   index: number;
+  maxPayout: number | null; // 全部当たったときの払戻額(未成立のベットはnull)
   disabled: boolean;
   onEdit: () => void;
   onRemove: () => void;
@@ -19,6 +20,7 @@ type BetSummaryProps = {
 export default function BetSummary({
   bet,
   index,
+  maxPayout,
   disabled,
   onEdit,
   onRemove,
@@ -33,12 +35,24 @@ export default function BetSummary({
         disabled={disabled}
         onClick={onEdit}
       >
-        <span className={styles.index}>BET{index + 1}</span>
-        <div className={styles.detail}>
+        <span className={styles.info}>
+          <span className={styles.index}>BET{index + 1}</span>
           <span className={styles.betType}>{betTypeLabel(bet.betType)}</span>
           <span className={styles.runnerNames}>{runnerNames}</span>
-        </div>
-        <span className={styles.amount}>¥{bet.betstr}</span>
+        </span>
+
+        <span className={styles.stats}>
+          <span className={styles.stat}>
+            <span className={styles.statLabel}>賭け金</span>
+            <span className={styles.statValue}>¥{bet.betstr}</span>
+          </span>
+          <span className={styles.stat}>
+            <span className={styles.statLabel}>最大払戻</span>
+            <span className={styles.payoutValue}>
+              {maxPayout === null ? "-" : `¥${maxPayout}`}
+            </span>
+          </span>
+        </span>
       </button>
       <button
         type="button"

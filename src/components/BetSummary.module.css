@@ -3,55 +3,85 @@
   align-items: stretch;
   gap: 0;
   border: 1px solid var(--border);
+  background: var(--bg);
   flex: 1 1 0;
-  min-height: 44px;
+  min-height: 84px;
 }
 
 .editButton {
   flex: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  font-size: 13px;
+  justify-content: space-between;
+  gap: 8px clamp(16px, 3vw, 40px);
+  padding: 10px clamp(12px, 1.6vw, 20px);
   border: none;
   text-align: left;
   min-width: 0;
 }
 
-.index {
-  color: var(--muted);
-  font-weight: 700;
-  white-space: nowrap;
+/* BET番号・券種・馬名 */
+.info {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
 }
 
-.detail {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  overflow: hidden;
+.index {
+  font-size: clamp(14px, 1.3vw, 16px);
+  font-weight: 900;
+  color: var(--muted);
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .betType {
-  font-weight: 700;
+  font-size: clamp(18px, 1.8vw, 24px);
+  font-weight: 900;
 }
 
 .runnerNames {
+  font-size: clamp(14px, 1.4vw, 18px);
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.amount {
+/* 賭け金・最大払戻 */
+.stats {
+  display: flex;
+  gap: clamp(16px, 2.4vw, 32px);
+}
+
+.stat {
+  display: grid;
+  gap: 0;
+  justify-items: end;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.statValue,
+.payoutValue {
+  font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 900;
+  line-height: 1.2;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 最大払戻だけ青く強調する */
+.payoutValue {
+  color: var(--accent);
 }
 
 .removeButton {
-  width: 36px;
+  width: 40px;
   border: none;
   border-left: 1px solid var(--border);
 }

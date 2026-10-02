@@ -117,35 +117,6 @@
   font-size: 16px;
 }
 
-.previousResult {
-  margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  display: grid;
-  gap: 6px;
-}
-
-.previousResultTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.previousResultLines {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.previousResultLine {
-  display: inline-block;
-  white-space: nowrap;
-  font-size: 14px;
-  color: var(--text);
-}
-
 /* ----- 抽選演出 ----- */
 
 .raceProgress {
@@ -269,4 +240,10 @@
   text-align: center;
   color: var(--accent);
   border: 1px solid var(--accent);
+}
+
+@media (max-width: 600px) {
+  .resultPanel {
+    padding: 12px;
+  }
 }

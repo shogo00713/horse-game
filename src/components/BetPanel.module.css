@@ -71,39 +71,16 @@
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.payoutBox {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: baseline;
-  gap: 2px 8px;
-  padding: 10px 14px;
-  border: 1px solid var(--selected-border);
-  background: var(--selected-bg);
-}
-
-.payoutLabel {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.payoutValue {
-  font-size: 30px;
   font-weight: 900;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
+  font-size: clamp(18px, 1.8vw, 24px);
 }
 
-.payoutNote {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  color: var(--muted);
+.row span:last-child {
+  font-size: clamp(28px, 3.2vw, 42px);
+  font-variant-numeric: tabular-nums;
 }
 
 .betPanelSubmitButton {
@@ -118,4 +95,10 @@
 
 .betPanelSubmitButton:hover {
   opacity: 0.92;
+}
+
+@media (max-width: 600px) {
+  .betPanel {
+    padding: 12px;
+  }
 }

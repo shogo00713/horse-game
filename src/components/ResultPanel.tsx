@@ -2,9 +2,9 @@
  * 着順を表示するコンポーネント
  *
  * phaseに応じて表示内容が変わる
- *  - BETTING: 着順は非表示、前回結果のみ表示
- *  - DRAWING: 着順は非表示、前回結果も非表示
- *  - PAYOUT: 着順を表示、前回結果も表示
+ *  - BETTING: 出走馬一覧(枠番・馬名・オッズ。前回3位以内の馬には印が付く)
+ *  - DRAWING: 抽選演出(順位枠の上を馬名のプレートが動く)
+ *  - PAYOUT: 着順を表示
  */
 
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ import {
   progressAt,
   SETTLE_PROGRESS,
 } from "../logic/drawAnimation";
+import EntryList from "./EntryList";
 import styles from "./ResultPanel.module.css";
 
 // 親コンポーネントから渡されるprops
@@ -21,7 +22,6 @@ type ResultPanelProps = {
   phase: Phase;
   runners: Runner[];
   result: Runner[];
-  previousResult: Runner[];
   betMarks: Record<string, number[]>; // 馬のID → その馬を選んでいるBETの番号
   maxBets?: number; // BETの最大件数(印の列の数)
   onSkip: () => void;
@@ -79,7 +79,6 @@ export default function ResultPanel({
   phase,
   runners,
   result,
-  previousResult,
   betMarks,
   maxBets = 5,
   onSkip,
@@ -106,6 +105,7 @@ export default function ResultPanel({
   }, [phase, result]);
 
   const isDrawing = phase === "DRAWING";
+  const isBetting = phase === "BETTING";
 
   // 選んだ馬をハイライトする用のID
 
@@ -117,7 +117,11 @@ export default function ResultPanel({
         <p className={styles.guide}>{phaseGuide(phase)}</p>
       </div>
 
-      <div className={styles.sectionTitle}>着順</div>
+      <div className={styles.sectionTitle}>
+        {isBetting ? "出走馬一覧" : "着順"}
+      </div>
+
+      {isBetting && <EntryList runners={runners} lastResult={result} />}
 
       {isDrawing && (
         <div
@@ -139,112 +143,93 @@ export default function ResultPanel({
         </div>
       )}
 
-      <div className={styles.finishLines}>
-        {/* 今回の着順を表示する部分 */}
-        {runners.map((runner, i) => {
-          const rank = i + 1;
-          const rowMarks =
-            phase === "PAYOUT" ? (betMarks[result?.[i]?.id] ?? []) : [];
-          const isSelected = rowMarks.length > 0;
-          // 演出中は、名前はプレート側に出すので、枠の中は空にしておく
-          const shownName =
-            phase === "PAYOUT"
-              ? (result?.[i]?.name ?? "-")
-              : isDrawing
-                ? ""
-                : "-";
+      {!isBetting && (
+        <div className={styles.finishLines}>
+          {/* 今回の着順を表示する部分 */}
+          {runners.map((runner, i) => {
+            const rank = i + 1;
+            const rowMarks =
+              phase === "PAYOUT" ? (betMarks[result?.[i]?.id] ?? []) : [];
+            const isSelected = rowMarks.length > 0;
+            // 演出中は、名前はプレート側に出すので、枠の中は空にしておく
+            const shownName =
+              phase === "PAYOUT"
+                ? (result?.[i]?.name ?? "-")
+                : isDrawing
+                  ? ""
+                  : "-";
 
-          return (
-            <div
-              key={runner.id}
-              data-testid="finish-line"
-              className={
-                isSelected
-                  ? `${styles.finishLine} ${styles.finishLineSelected}`
-                  : styles.finishLine
-              }
-            >
-              <span
-                className={`${styles.finishRank} ${styles[`finishRank${rank}`] ?? ""}`}
-              >
-                {rank}位:
-              </span>
-              <span
-                className={`${styles.finishName} ${styles[`finishName${rank}`] ?? ""}`}
-              >
-                {shownName}
-              </span>
-              {phase === "PAYOUT" && (
-                <BetMarkSlots
-                  marks={rowMarks}
-                  count={maxBets}
-                  className={styles.rowTag}
-                />
-              )}
-            </div>
-          );
-        })}
-
-        {/* 演出中: 名前入りのプレートが、固定の順位枠の上を移動する */}
-        {isDrawing &&
-          drawOrder?.map((runner, rank) => {
-            const marks = betMarks[runner.id] ?? [];
-            const isMine = marks.length > 0;
-            const isSettled = progress >= SETTLE_PROGRESS;
             return (
               <div
                 key={runner.id}
-                data-testid="runner-plate"
-                data-rank={rank + 1}
-                className={[
-                  styles.plate,
-                  isMine && styles.plateMine,
-                  isSettled && styles.plateSettled,
-                  isSettled && rank === 0 && styles.plateWinner,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                style={{
-                  transform: `translateY(calc(${rank} * (var(--row-h) + var(--row-gap))))`,
-                }}
+                data-testid="finish-line"
+                className={
+                  isSelected
+                    ? `${styles.finishLine} ${styles.finishLineSelected}`
+                    : styles.finishLine
+                }
               >
-                <span>{runner.name}</span>
-                <BetMarkSlots
-                  marks={marks}
-                  count={maxBets}
-                  className={styles.plateTag}
-                />
+                <span
+                  className={`${styles.finishRank} ${styles[`finishRank${rank}`] ?? ""}`}
+                >
+                  {rank}位:
+                </span>
+                <span
+                  className={`${styles.finishName} ${styles[`finishName${rank}`] ?? ""}`}
+                >
+                  {shownName}
+                </span>
+                {phase === "PAYOUT" && (
+                  <BetMarkSlots
+                    marks={rowMarks}
+                    count={maxBets}
+                    className={styles.rowTag}
+                  />
+                )}
               </div>
             );
           })}
-      </div>
+
+          {/* 演出中: 名前入りのプレートが、固定の順位枠の上を移動する */}
+          {isDrawing &&
+            drawOrder?.map((runner, rank) => {
+              const marks = betMarks[runner.id] ?? [];
+              const isMine = marks.length > 0;
+              const isSettled = progress >= SETTLE_PROGRESS;
+              return (
+                <div
+                  key={runner.id}
+                  data-testid="runner-plate"
+                  data-rank={rank + 1}
+                  className={[
+                    styles.plate,
+                    isMine && styles.plateMine,
+                    isSettled && styles.plateSettled,
+                    isSettled && rank === 0 && styles.plateWinner,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{
+                    transform: `translateY(calc(${rank} * (var(--row-h) + var(--row-gap))))`,
+                  }}
+                >
+                  <span>{runner.name}</span>
+                  <BetMarkSlots
+                    marks={marks}
+                    count={maxBets}
+                    className={styles.plateTag}
+                  />
+                </div>
+              );
+            })}
+        </div>
+      )}
 
       {isDrawing && (
         <button type="button" className={styles.skipButton} onClick={onSkip}>
           結果へスキップ
         </button>
       )}
-
-      <div className={styles.previousResult}>
-        <div className={styles.previousResultTitle}>前回結果</div>
-        <div className={styles.previousResultLines}>
-          {/* 前回の着順を表示する部分 */}
-          {runners.map((_, rank) => (
-            <div
-              key={rank}
-              data-testid="previous-result-line"
-              className={styles.previousResultLine}
-            >
-              {rank + 1}位:{" "}
-              {phase !== "DRAWING"
-                ? (previousResult?.[rank]?.name ?? "-")
-                : "-"}
-              {/* 最後の馬以外はカンマを表示する */}
-              {rank < runners.length - 1 ? " ," : ""}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

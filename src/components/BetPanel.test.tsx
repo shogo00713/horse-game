@@ -31,7 +31,6 @@ function renderBetPanel(
     runners,
     maxBets: 5,
     totalBetAmount: 0,
-    maxPayout: 0,
     canSubmit: false,
     onAddBet: () => "bet-1",
     onRemoveBet: () => {},
@@ -121,11 +120,31 @@ describe("BetPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("最大払戻額が表示される", () => {
-    renderBetPanel({ maxPayout: 1500 });
+  it("各ベットの枠に、賭け金と最大払戻額が表示される", () => {
+    renderBetPanel({
+      bets: [
+        makeBet({
+          betType: "WIN",
+          selectedRunners: [runners[0]],
+          betstr: "300",
+        }),
+      ],
+    });
+
+    expect(screen.getByText("賭け金")).toBeInTheDocument();
+    expect(screen.getByText("¥300")).toBeInTheDocument();
+    expect(screen.getByText("最大払戻")).toBeInTheDocument();
+    // 300円 × オッズ1.2倍
+    expect(screen.getByText("¥360")).toBeInTheDocument();
+  });
+
+  it("馬を選んでいない(不成立の)ベットの最大払戻は「-」になる", () => {
+    renderBetPanel({
+      bets: [makeBet({ selectedRunners: [] })],
+    });
 
     expect(screen.getByText("最大払戻")).toBeInTheDocument();
-    expect(screen.getByText("¥1500")).toBeInTheDocument();
+    expect(screen.getByText("-")).toBeInTheDocument();
   });
 
   it("BETするボタンで onSubmit が呼ばれる", async () => {

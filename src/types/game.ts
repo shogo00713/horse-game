@@ -41,5 +41,6 @@ export interface Runner {
   id: string;
   name: string;
   odds: number;
+  description?: string; // 出走馬一覧に出す一言紹介
   strength?: number; // 着順を決めるときの基本の強さ(省略時は 1/odds)
 }

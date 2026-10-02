@@ -15,13 +15,20 @@ import RunnerRow from "./RunnerRow";
 import { CONDITION_LABELS, type Conditions } from "../logic/condition";
 import Icon from "./Icon";
 
+// 賭け金の定額ボタン
+const AMOUNT_PRESETS = [
+  { value: 1000, label: "1,000円" },
+  { value: 5000, label: "5,000円" },
+  { value: 10000, label: "1万円" },
+];
+
 const BET_TYPES: BetType[] = [
   "WIN",
   "PLACE",
-  "TRIO",
-  "TRIFECTA",
   "QUINELLA",
   "EXACTA",
+  "TRIO",
+  "TRIFECTA",
 ];
 
 type BetEditorProps = {
@@ -46,6 +53,9 @@ export default function BetEditor({
   onClose,
 }: BetEditorProps) {
   const isConfirmDisabled = !isValidBet(bet);
+  const isPresetAmount = AMOUNT_PRESETS.some(
+    (p) => String(p.value) === bet.betstr,
+  );
 
   return (
     <div className={styles.editor}>
@@ -58,20 +68,36 @@ export default function BetEditor({
         </span>
       </div>
 
-      <label className={styles.field}>
-        <span className={styles.label}>① 券種を選ぶ</span>
-        <select
-          className={styles.select}
-          value={bet.betType}
-          onChange={(e) => onChangeBetType(e.target.value as BetType)}
+      <div className={styles.field}>
+        <span className={styles.label} id="bet-type-label">
+          ① 券種を選ぶ
+        </span>
+        <div
+          className={styles.typeRow}
+          role="radiogroup"
+          aria-labelledby="bet-type-label"
         >
-          {BET_TYPES.map((betType) => (
-            <option key={betType} value={betType}>
-              {betTypeLabel(betType)}
-            </option>
-          ))}
-        </select>
-      </label>
+          {BET_TYPES.map((betType) => {
+            const isActive = betType === bet.betType;
+            return (
+              <button
+                key={betType}
+                type="button"
+                role="radio"
+                aria-checked={isActive}
+                className={
+                  isActive
+                    ? `${styles.typeButton} ${styles.typeButtonActive}`
+                    : styles.typeButton
+                }
+                onClick={() => onChangeBetType(betType)}
+              >
+                {betTypeLabel(betType)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <span className={styles.label}>② 馬を選ぶ</span>
       <div className={styles.runnerList}>
@@ -87,6 +113,7 @@ export default function BetEditor({
             <RunnerRow
               key={r.id}
               runner={r}
+              frameNumber={runners.indexOf(r) + 1}
               isSelected={isSelected}
               selectionBadge={badge}
               debugLabel={
@@ -101,18 +128,54 @@ export default function BetEditor({
         })}
       </div>
 
-      <label className={styles.field}>
-        <span className={styles.label}>③ 賭け金を決める</span>
-        <div className={styles.amountRow}>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={bet.betstr}
-            onChange={(e) => onChangeBetAmount(e.target.value)}
-          />
-          <span className={styles.yen}>円</span>
+      <div className={styles.field}>
+        <span className={styles.label} id="bet-amount-label">
+          ③ 賭け金を決める
+        </span>
+        <div
+          className={styles.amountGroup}
+          role="group"
+          aria-labelledby="bet-amount-label"
+        >
+          {AMOUNT_PRESETS.map((preset) => {
+            const isActive = bet.betstr === String(preset.value);
+            return (
+              <button
+                key={preset.value}
+                type="button"
+                aria-pressed={isActive}
+                className={
+                  isActive
+                    ? `${styles.amountButton} ${styles.amountButtonActive}`
+                    : styles.amountButton
+                }
+                onClick={() => onChangeBetAmount(String(preset.value))}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+
+          {/* 好きな額を入力する(定額ボタンを選んでいるときは空にしておく) */}
+          <label
+            className={
+              isPresetAmount
+                ? styles.customAmount
+                : `${styles.customAmount} ${styles.customAmountActive}`
+            }
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="好きな額"
+              aria-label="好きな額"
+              value={isPresetAmount ? "" : bet.betstr}
+              onChange={(e) => onChangeBetAmount(e.target.value)}
+            />
+            <span className={styles.yen}>円</span>
+          </label>
         </div>
-      </label>
+      </div>
 
       <div className={styles.footer}>
         <button type="button" onClick={onClose}>

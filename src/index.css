@@ -32,6 +32,12 @@
   box-sizing: border-box;
 }
 
+/* 横スクロールが出ないようにする(はみ出した分は切り捨て。sticky には影響しない) */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   color: var(--text);

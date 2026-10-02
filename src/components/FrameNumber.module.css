@@ -1,0 +1,46 @@
+/* 枠番 */
+.frame {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  background: var(--muted);
+}
+
+.frame1 {
+  background: #fff;
+  color: #1f2328;
+  border: 1px solid #8c959f;
+}
+.frame2 {
+  background: #1f2328;
+}
+.frame3 {
+  background: #d1242f;
+}
+.frame4 {
+  background: #2f6fed;
+}
+.frame5 {
+  background: #f2cc0c;
+  color: #1f2328;
+}
+.frame6 {
+  background: #2da44e;
+}
+.frame7 {
+  background: #f08c1c;
+}
+.frame8 {
+  background: #f06fa6;
+}
+
+.small {
+  width: 28px;
+  height: 28px;
+  font-size: 15px;
+}
