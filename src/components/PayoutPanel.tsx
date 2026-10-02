@@ -14,6 +14,10 @@ type PayoutPanelProps = {
   onAccept: () => void;
 };
 
+const acceptButtonText = (payout: number) => {
+  return payout > 0 ? `¥${payout} 受け取る` : "次に進む";
+};
+
 export default function PayoutPanel({
   phase,
   payout,
@@ -30,7 +34,7 @@ export default function PayoutPanel({
         disabled={phase !== "PAYOUT"}
         onClick={onAccept}
       >
-        受け取り
+        {acceptButtonText(payout)}
       </button>
     </div>
   );

@@ -20,9 +20,7 @@ export default function RunnerButton({
     <button
       type="button"
       className={
-        isSelected
-          ? `${styles.runner} ${styles.runnerSelected}`
-          : styles.runner
+        isSelected ? `${styles.runner} ${styles.runnerSelected}` : styles.runner
       }
       disabled={disabled}
       onClick={onClick}

@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import BetPanel from "./BetPanel";
-import type { Runner } from "../types/game";
+import type { Runner, Bet } from "../types/game";
 
 // テスト用の馬データ
 const runners: Runner[] = [
@@ -11,20 +11,32 @@ const runners: Runner[] = [
   { id: "storm", name: "ストームエッジ", odds: 2.0 },
 ];
 
-// 関数呼び出し確認用の共通のprops初期値
+function makeBet(overrides: Partial<Bet> = {}): Bet {
+  return {
+    id: "bet-1",
+    betType: "WIN",
+    selectedRunners: [],
+    betstr: "300",
+    ...overrides,
+  };
+}
+
+// 共通のprops初期値 + 上書き用ヘルパー
 function renderBetPanel(
   overrides: Partial<ComponentProps<typeof BetPanel>> = {},
 ) {
   const props: ComponentProps<typeof BetPanel> = {
-    betType: "WIN",
+    bets: [makeBet()],
     phase: "BETTING",
-    betstr: "300",
     runners,
-    selectedRunners: [],
+    maxBets: 5,
+    totalBetAmount: 300,
+    canSubmit: false,
+    onAddBet: () => {},
+    onRemoveBet: () => {},
     onChangeBetType: () => {},
-    onChangeBet: () => {},
-    onSelectRunner: () => {},
-    onSetTotalBet: () => {},
+    onChangeBetAmount: () => {},
+    onToggleRunner: () => {},
     onSubmit: () => {},
     ...overrides,
   };
@@ -32,58 +44,101 @@ function renderBetPanel(
 }
 
 describe("BetPanel", () => {
-  it("BETTINGフェーズかつ馬を最大数選んでいる場合、確定ボタンは有効化される", () => {
-    renderBetPanel({ selectedRunners: [runners[0]] });
+  it("BETTING中かつcanSubmitならBETするボタンは有効化される", () => {
+    renderBetPanel({ canSubmit: true });
 
-    expect(screen.getByRole("button", { name: "確定" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "BETする" })).toBeEnabled();
   });
 
-  it("BETTTINGフェーズでない場合、確定ボタンは無効化される", () => {
-    renderBetPanel({ phase: "DRAWING" });
+  it("BETTING中でなければBETするボタンは無効化される", () => {
+    renderBetPanel({ canSubmit: true, phase: "DRAWING" });
 
-    expect(screen.getByRole("button", { name: "確定" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "BETする" })).toBeDisabled();
   });
 
-  it("馬を最大数選んでいない場合、確定ボタンは無効化される", () => {
-    renderBetPanel({ selectedRunners: [] });
+  it("canSubmitがfalseならBETするボタンは無効化される", () => {
+    renderBetPanel({ canSubmit: false });
 
-    expect(screen.getByRole("button", { name: "確定" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "BETする" })).toBeDisabled();
   });
 
-  it("賭け方を変えると onChangeBetType が呼ばれる", async () => {
+  it("賭け方を変えると onChangeBetType がベットIDと一緒に呼ばれる", async () => {
     const onChangeBetType = vi.fn();
-    renderBetPanel({ onChangeBetType });
+    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onChangeBetType });
 
     await userEvent.selectOptions(screen.getByRole("combobox"), "TRIO");
 
-    expect(onChangeBetType).toHaveBeenCalledWith("TRIO");
+    expect(onChangeBetType).toHaveBeenCalledWith("bet-1", "TRIO");
   });
 
-  it("金額を入力すると onChangeBet が呼ばれる", async () => {
-    const onChangeBet = vi.fn();
-    renderBetPanel({ onChangeBet });
+  it("金額を入力すると onChangeBetAmount がベットIDと一緒に呼ばれる", async () => {
+    const onChangeBetAmount = vi.fn();
+    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onChangeBetAmount });
 
     await userEvent.type(screen.getByRole("textbox"), "5");
 
-    expect(onChangeBet).toHaveBeenCalled();
+    expect(onChangeBetAmount).toHaveBeenCalled();
+    expect(onChangeBetAmount.mock.calls[0][0]).toBe("bet-1");
   });
 
-  it("馬をクリックすると onSelectRunner が呼ばれる", async () => {
-    const onSelectRunner = vi.fn();
-    renderBetPanel({ onSelectRunner });
+  it("馬をクリックすると onToggleRunner がベットIDと一緒に呼ばれる", async () => {
+    const onToggleRunner = vi.fn();
+    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onToggleRunner });
 
     await userEvent.click(screen.getByRole("button", { name: /フェニックス/ }));
 
-    expect(onSelectRunner).toHaveBeenCalledWith(runners[0]);
+    expect(onToggleRunner).toHaveBeenCalledWith("bet-1", runners[0]);
   });
 
-  it("確定ボタンで onSubmit が呼ばれる", async () => {
+  it("BETするボタンで onSubmit が呼ばれる", async () => {
     const onSubmit = vi.fn();
-    // 単勝は1頭選んでいないとボタンが無効になるので、選択済み状態で描画する
-    renderBetPanel({ selectedRunners: [runners[0]], onSubmit });
+    renderBetPanel({ canSubmit: true, onSubmit });
 
-    await userEvent.click(screen.getByRole("button", { name: "確定" }));
+    await userEvent.click(screen.getByRole("button", { name: "BETする" }));
 
     expect(onSubmit).toHaveBeenCalledOnce();
+  });
+
+  it("「＋ ベットを追加」で onAddBet が呼ばれる", async () => {
+    const onAddBet = vi.fn();
+    renderBetPanel({ onAddBet });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /ベットを追加/ }),
+    );
+
+    expect(onAddBet).toHaveBeenCalledOnce();
+  });
+
+  it("ベットが最大件数に達していると「＋ ベットを追加」は無効化される", () => {
+    const fiveBets = Array.from({ length: 5 }, (_, i) =>
+      makeBet({ id: `bet-${i}` }),
+    );
+    renderBetPanel({ bets: fiveBets, maxBets: 5 });
+
+    expect(
+      screen.getByRole("button", { name: /ベットを追加/ }),
+    ).toBeDisabled();
+  });
+
+  it("ベットが1件だけのときは削除ボタンが表示されない", () => {
+    renderBetPanel({ bets: [makeBet({ id: "bet-1" })] });
+
+    expect(
+      screen.queryByRole("button", { name: /削除/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ベットが2件以上のとき、削除ボタンで onRemoveBet がベットIDと一緒に呼ばれる", async () => {
+    const onRemoveBet = vi.fn();
+    renderBetPanel({
+      bets: [makeBet({ id: "bet-1" }), makeBet({ id: "bet-2" })],
+      onRemoveBet,
+    });
+
+    const removeButtons = screen.getAllByRole("button", { name: /削除/ });
+    await userEvent.click(removeButtons[0]);
+
+    expect(onRemoveBet).toHaveBeenCalledWith("bet-1");
   });
 });

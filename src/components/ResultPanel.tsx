@@ -23,11 +23,11 @@ type ResultPanelProps = {
 function phaseMessage(phase: Phase): string {
   switch (phase) {
     case "BETTING":
-      return "ベット受付中!!";
+      return "ベット受付中";
     case "DRAWING":
-      return "抽選中…";
+      return "抽選中";
     case "PAYOUT":
-      return "結果発表！";
+      return "払い戻し中";
   }
 }
 

@@ -31,7 +31,7 @@ describe("ResultPanel", () => {
       />,
     );
 
-    expect(screen.getByText("現在 : ベット受付中!!")).toBeInTheDocument();
+    expect(screen.getByText("現在 : ベット受付中")).toBeInTheDocument();
     expect(screen.getByText("1位:")).toBeInTheDocument();
     expect(screen.getByText("2位:")).toBeInTheDocument();
     expect(screen.getAllByText("-")).toHaveLength(runners.length);
@@ -60,7 +60,7 @@ describe("ResultPanel", () => {
       />,
     );
 
-    expect(screen.getByText("現在 : 抽選中…")).toBeInTheDocument();
+    expect(screen.getByText("現在 : 抽選中")).toBeInTheDocument();
     expect(screen.getAllByText("-")).toHaveLength(runners.length);
 
     // previous_result_lines側も、名前が出ていないことを直接確認する
@@ -87,7 +87,7 @@ describe("ResultPanel", () => {
       "previous-result-line",
     );
 
-    expect(screen.getByText("現在 : 結果発表！")).toBeInTheDocument();
+    expect(screen.getByText("現在 : 払い戻し中")).toBeInTheDocument();
 
     expect(firstLine).toHaveTextContent("1位:");
     expect(firstLine).toHaveTextContent("フェニックス");

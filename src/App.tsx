@@ -2,6 +2,7 @@ import styles from "./App.module.css";
 
 import { useState } from "react";
 import { useHorseGame } from "./hooks/useHorseGame";
+import { useTheme } from "./hooks/useTheme";
 import HistoryModal from "./components/HistoryModal";
 
 import Header from "./components/Header";
@@ -13,26 +14,32 @@ export default function App() {
   const {
     runners,
     money,
-    betstr,
     phase,
     payout,
-    selectedRunners,
+    bets,
     result,
     previousResult,
-    betType,
     errorMessage,
     raceHistory,
     canResetMoney,
-    setBet,
+    canSubmit,
+    totalBetAmount,
+    maxBets,
+    addBet,
+    removeBet,
     changeBetType,
+    changeBetAmount,
     toggleRunner,
     go,
     accept,
-    setTotalBet,
     resetMoney,
   } = useHorseGame();
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+
+  // 全ベットで選んでいる馬をまとめて、着順側のハイライトに使う
+  const selectedRunners = bets.flatMap((bet) => bet.selectedRunners);
 
   return (
     <div className={styles.app}>
@@ -43,7 +50,13 @@ export default function App() {
       />
 
       {/* ヘッダー部分 */}
-      <Header money={money} onResetMoney={resetMoney} canResetMoney={canResetMoney} />
+      <Header
+        money={money}
+        onResetMoney={resetMoney}
+        canResetMoney={canResetMoney}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       {/* メイン部分 */}
       <main className={styles.main}>
@@ -57,10 +70,7 @@ export default function App() {
             selectedRunners={selectedRunners}
           />
 
-          <button onClick={() => setIsHistoryOpen(true)}>
-            {" "}
-            📋 履歴
-          </button>
+          <button onClick={() => setIsHistoryOpen(true)}> 📋 履歴</button>
         </div>
 
         <div className={styles.rightPanel}>
@@ -72,15 +82,17 @@ export default function App() {
 
           {/* ベットパネル */}
           <BetPanel
-            betType={betType}
+            bets={bets}
             phase={phase}
-            betstr={betstr}
             runners={runners}
-            selectedRunners={selectedRunners}
+            maxBets={maxBets}
+            totalBetAmount={totalBetAmount}
+            canSubmit={canSubmit}
+            onAddBet={addBet}
+            onRemoveBet={removeBet}
             onChangeBetType={changeBetType}
-            onChangeBet={setBet}
-            onSelectRunner={toggleRunner}
-            onSetTotalBet={setTotalBet}
+            onChangeBetAmount={changeBetAmount}
+            onToggleRunner={toggleRunner}
             onSubmit={go}
           />
 

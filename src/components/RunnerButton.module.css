@@ -1,6 +1,6 @@
 .runner {
   position: relative;
-  background: #ffffff;
+  background: var(--bg-card);
   color: var(--text);
   border: 1px solid var(--border);
   box-shadow: none;
@@ -15,21 +15,14 @@
 }
 
 .runnerSelected {
-  border-color: var(--accent);
-  background: rgba(219, 234, 254, 0.9);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  border-color: var(--selected-border);
+  background: var(--selected-bg);
+  box-shadow: 0 0 0 2px var(--selected-border);
   transform: translateY(-1px);
 }
 
 .runner:hover {
-  background: rgba(219, 234, 254, 0.55);
-}
-
-.runner:disabled {
-  background: rgba(15, 23, 42, 0.05);
-  color: rgba(15, 23, 42, 0.3);
-  border-color: rgba(15, 23, 42, 0.05);
-  cursor: not-allowed;
+  background: var(--selected-bg);
 }
 
 .runnerName {
@@ -54,6 +47,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #222;
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
 }

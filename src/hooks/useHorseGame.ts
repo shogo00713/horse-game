@@ -1,59 +1,117 @@
 /**
  * 競馬ゲーム全体の進行を管理するカスタムフック
  *
- * go() で1回のレースが進行する
+ * go() で1回のレースが進行する(同時に複数件のベットを判定する)
  * accept() でレース結果を確定し、次のレースに進む
  */
 
 import { useState } from "react";
 import { runners } from "../data/runners";
-import type { BetType, Phase, Runner, RaceHistory } from "../types/game";
+import type {
+  BetType,
+  Phase,
+  Runner,
+  RaceHistory,
+  Bet,
+  BetResult,
+} from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
-import { maxSelectable, buildBetSelection, canResetMoney } from "../logic/betRules";
+import {
+  maxSelectable,
+  buildBetSelection,
+  canResetMoney,
+  isValidBet,
+  totalBetAmount,
+  canSubmitBets,
+} from "../logic/betRules";
+
+const MAX_BETS = 5;
+
+// 空のベットを1件作る
+function createEmptyBet(): Bet {
+  return {
+    id: crypto.randomUUID(),
+    betType: "WIN",
+    selectedRunners: [],
+    betstr: "300",
+  };
+}
 
 export function useHorseGame() {
   const [money, setMoney] = useState(5000);
-  const [betstr, setBet] = useState("300");
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
-  const [selectedRunners, setSelectedRunners] = useState<Runner[]>([]);
+  const [betResults, setBetResults] = useState<BetResult[]>([]);
+  const [bets, setBets] = useState<Bet[]>(() => [createEmptyBet()]);
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
-  const [betType, setBetType] = useState<BetType>("WIN");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 選択中の馬を切り替える操作のラッパー
-  function toggleRunner(runner: Runner) {
-    setSelectedRunners((prev) => {
-      const exists = prev.some((r) => r.id === runner.id);
-
-      // 選ばれていたら → 解除
-      if (exists) {
-        return prev.filter((r) => r.id !== runner.id);
-      }
-
-      // 1頭 → 押したやつをそのまま選択
-      const max = maxSelectable(betType);
-
-      if (max === 1) {
-        return [runner];
-      }
-
-      // まだ選択できる数未満なら → 追加
-      if (prev.length < maxSelectable(betType)) {
-        return [...prev, runner];
-      }
-
-      // 選択できる数すでに選ばれていたら → 何もしない
-      return prev;
-    });
+  // ベットを1件追加する(最大5件まで)
+  function addBet() {
+    setBets((prev) =>
+      prev.length < MAX_BETS ? [...prev, createEmptyBet()] : prev,
+    );
   }
 
-  // ベットタイプを切り替える操作のラッパー
-  function changeBetType(nextBetType: BetType) {
-    setBetType(nextBetType);
-    setSelectedRunners([]);
+  // ベットを1件削除する
+  function removeBet(id: string) {
+    setBets((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  // 指定したベットの賭け方を切り替える(選択中の馬はリセットする)
+  function changeBetType(id: string, nextBetType: BetType) {
+    setBets((prev) =>
+      prev.map((b) =>
+        b.id === id
+          ? { ...b, betType: nextBetType, selectedRunners: [] }
+          : b,
+      ),
+    );
+  }
+
+  // 指定したベットの賭け金額を変更する
+  function changeBetAmount(id: string, value: string) {
+    setBets((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, betstr: value } : b)),
+    );
+  }
+
+  // 指定したベットの、選択中の馬を切り替える
+  function toggleRunner(id: string, runner: Runner) {
+    setBets((prev) =>
+      prev.map((b) => {
+        if (b.id !== id) return b;
+
+        const exists = b.selectedRunners.some((r) => r.id === runner.id);
+
+        // 選ばれていたら → 解除
+        if (exists) {
+          return {
+            ...b,
+            selectedRunners: b.selectedRunners.filter(
+              (r) => r.id !== runner.id,
+            ),
+          };
+        }
+
+        const max = maxSelectable(b.betType);
+
+        // 1頭 → 押したやつをそのまま選択
+        if (max === 1) {
+          return { ...b, selectedRunners: [runner] };
+        }
+
+        // まだ選択できる数未満なら → 追加
+        if (b.selectedRunners.length < max) {
+          return { ...b, selectedRunners: [...b.selectedRunners, runner] };
+        }
+
+        // 選択できる数すでに選ばれていたら → 何もしない
+        return b;
+      }),
+    );
   }
 
   // 初期値を localStorage から復元
@@ -71,11 +129,6 @@ export function useHorseGame() {
     return saved ? Number(saved) : 1;
   });
 
-  // 全額ベット用の補助関数
-  function setTotalBet() {
-    setBet(money.toString());
-  }
-
   // 所持金をリセットする補助関数
   function resetMoney() {
     if (canResetMoney(phase, money)) {
@@ -85,7 +138,7 @@ export function useHorseGame() {
         }, 2000);
       }
     }
-  };
+  }
 
   function go() {
     // ----- 抽選前 -----
@@ -93,36 +146,44 @@ export function useHorseGame() {
     if (phase !== "BETTING") return;
 
     // 入力のエラーチェック
-    const bet = Number(betstr);
     setErrorMessage("");
-    if (bet <= 0) {
-      setErrorMessage("賭ける金額を1円以上で入力してください。");
+    if (bets.length === 0) {
+      setErrorMessage("ベットを1件以上追加してください。");
       return;
     }
-    if (bet > money) {
+    if (!bets.every(isValidBet)) {
+      setErrorMessage("馬の選択か金額が未入力のベットがあります。");
+      return;
+    }
+    const total = totalBetAmount(bets);
+    if (total > money) {
       setErrorMessage("所持金が不足しています。");
-      return;
-    }
-    if (selectedRunners.length !== maxSelectable(betType)) {
-      setErrorMessage(`選択できる馬の数は ${maxSelectable(betType)} 頭です。`);
       return;
     }
 
     // ----- 抽選中 -----
     setPhase("DRAWING");
-    setMoney((prev) => prev - bet);
+    setMoney((prev) => prev - total);
 
     setTimeout(() => {
       // 前回結果の保存
       setPreviousResult(result);
-      // 選択の確定
-      const selection = buildBetSelection(betType, selectedRunners);
-      // 着順の生成
+      // 着順の生成(全ベット共通、同じ1回のレース)
       const finishOrder = makeFinishOrder(runners);
       setResult(finishOrder);
-      // 払い戻しの計算
-      const payout = calculatePayout(bet, selection, finishOrder);
-      setPayout(payout);
+
+      // ベットごとに払い戻しを計算する
+      const results: BetResult[] = bets.map((bet) => {
+        const selection = buildBetSelection(bet.betType, bet.selectedRunners);
+        const betPayout = calculatePayout(
+          Number(bet.betstr),
+          selection,
+          finishOrder,
+        );
+        return { bet, payout: betPayout };
+      });
+      setBetResults(results);
+      setPayout(results.reduce((sum, r) => sum + r.payout, 0));
       setPhase("PAYOUT");
     }, 1000);
   }
@@ -148,28 +209,32 @@ export function useHorseGame() {
     setMoney((prev) => prev + payout);
     setPhase("BETTING");
     setPayout(0);
+    setBetResults([]);
+    setBets([createEmptyBet()]);
   }
 
   return {
     runners,
     money,
-    betstr,
     phase,
     payout,
-    selectedRunners,
+    bets,
+    betResults,
     result,
     previousResult,
-    betType,
     errorMessage,
     raceHistory,
-    canResetMoney : canResetMoney(phase, money),
-    setBet,
+    canResetMoney: canResetMoney(phase, money),
+    canSubmit: canSubmitBets(bets, money),
+    totalBetAmount: totalBetAmount(bets),
+    maxBets: MAX_BETS,
+    addBet,
+    removeBet,
     changeBetType,
-    setSelectedRunners,
+    changeBetAmount,
     toggleRunner,
     go,
     accept,
-    setTotalBet,
     resetMoney,
   };
 }

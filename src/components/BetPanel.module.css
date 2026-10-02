@@ -2,7 +2,7 @@
   width: 100%;
   padding: 18px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--bg-card);
 
   display: grid;
   gap: 14px;
@@ -16,69 +16,18 @@
 .row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
-}
-
-.row input[type="text"] {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-  outline: none;
-}
-
-.row input[type="text"]:focus {
-  border-color: var(--accent);
-}
-
-.betPanelSelect {
-  width: 70%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text);
-  outline: none;
-  margin-left: auto;
-}
-
-.betPanelSelect:focus {
-  border-color: var(--accent);
-}
-
-.betPanelRaceList {
-  margin: 20px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.betAmountLabel {
-  font-size: 15px;
-  color: var(--text);
-}
-
-.betAmountUnit {
-  font-size: 15px;
-  color: var(--text);
+  font-weight: 700;
 }
 
 .betPanelSubmitButton {
   background: var(--accent);
-  color: white;
+  color: var(--accent-contrast);
   border-color: var(--accent);
   font-weight: 700;
 }
 
 .betPanelSubmitButton:hover {
   opacity: 0.92;
-}
-
-.betPanelSubmitButton:disabled {
-  background: rgba(37, 99, 235, 0.4);
-  border-color: rgba(37, 99, 235, 0.4);
-  color: rgba(255, 255, 255, 0.85);
 }

@@ -2,7 +2,7 @@
   width: 100%;
   padding: 18px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--bg-card);
 
   display: grid;
   gap: 14px;
@@ -21,17 +21,11 @@
 
 .acceptButton {
   background: var(--accent);
-  color: white;
+  color: var(--accent-contrast);
   border-color: var(--accent);
   font-weight: 700;
 }
 
 .acceptButton:hover {
   opacity: 0.92;
-}
-
-.acceptButton:disabled {
-  background: rgba(37, 99, 235, 0.4);
-  border-color: rgba(37, 99, 235, 0.4);
-  color: rgba(255, 255, 255, 0.85);
 }
