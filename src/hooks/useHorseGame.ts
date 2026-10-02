@@ -5,7 +5,7 @@
  * accept() でレース結果を確定し、次のレースに進む
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { runners } from "../data/runners";
 import type {
   BetType,
@@ -17,12 +17,20 @@ import type {
 } from "../types/game";
 import { makeFinishOrder } from "../logic/race";
 import { calculatePayout } from "../logic/payout";
+import { MAX_HISTORY } from "../logic/history";
+import { DRAW_DURATION_MS } from "../logic/drawAnimation";
+import {
+  dealConditions,
+  isValidConditions,
+  type Conditions,
+} from "../logic/condition";
 import {
   maxSelectable,
   buildBetSelection,
   canResetMoney,
   isValidBet,
   totalBetAmount,
+  totalMaxPayout,
   canSubmitBets,
 } from "../logic/betRules";
 
@@ -43,16 +51,26 @@ export function useHorseGame() {
   const [phase, setPhase] = useState<Phase>("BETTING");
   const [payout, setPayout] = useState(0);
   const [betResults, setBetResults] = useState<BetResult[]>([]);
-  const [bets, setBets] = useState<Bet[]>(() => [createEmptyBet()]);
+  const [bets, setBets] = useState<Bet[]>([]);
   const [result, setResult] = useState<Runner[]>([]);
   const [previousResult, setPreviousResult] = useState<Runner[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  // 抽選演出が終わって PAYOUT に進むまでのタイマー(スキップ時に止める)
+  const drawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ベットを1件追加する(最大5件まで)
-  function addBet() {
-    setBets((prev) =>
-      prev.length < MAX_BETS ? [...prev, createEmptyBet()] : prev,
-    );
+  useEffect(
+    () => () => {
+      if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
+    },
+    [],
+  );
+
+  // ベットを1件追加する(最大5件まで)。追加できたら、そのベットのIDを返す
+  function addBet(): string | null {
+    if (bets.length >= MAX_BETS) return null;
+    const newBet = createEmptyBet();
+    setBets((prev) => [...prev, newBet]);
+    return newBet.id;
   }
 
   // ベットを1件削除する
@@ -64,9 +82,7 @@ export function useHorseGame() {
   function changeBetType(id: string, nextBetType: BetType) {
     setBets((prev) =>
       prev.map((b) =>
-        b.id === id
-          ? { ...b, betType: nextBetType, selectedRunners: [] }
-          : b,
+        b.id === id ? { ...b, betType: nextBetType, selectedRunners: [] } : b,
       ),
     );
   }
@@ -129,6 +145,18 @@ export function useHorseGame() {
     return saved ? Number(saved) : 1;
   });
 
+  // 馬の調子(画面には出さない隠しパラメータ。次のレースの着順に影響する)
+  const [conditions, setConditions] = useState<Conditions>(() => {
+    try {
+      const saved = localStorage.getItem("horse-conditions");
+      const parsed: unknown = saved ? JSON.parse(saved) : null;
+      if (isValidConditions(parsed, runners)) return parsed;
+    } catch {
+      // 壊れた保存データは無視して作り直す
+    }
+    return dealConditions(runners);
+  });
+
   // 所持金をリセットする補助関数
   function resetMoney() {
     if (canResetMoney(phase, money)) {
@@ -162,30 +190,41 @@ export function useHorseGame() {
     }
 
     // ----- 抽選中 -----
+    // 結果と払い戻しはここで確定させておく(画面側は演出としてゆっくり見せるだけ)
     setPhase("DRAWING");
     setMoney((prev) => prev - total);
 
-    setTimeout(() => {
-      // 前回結果の保存
-      setPreviousResult(result);
-      // 着順の生成(全ベット共通、同じ1回のレース)
-      const finishOrder = makeFinishOrder(runners);
-      setResult(finishOrder);
+    setPreviousResult(result);
+    const finishOrder = makeFinishOrder(runners, conditions);
+    setResult(finishOrder);
 
-      // ベットごとに払い戻しを計算する
-      const results: BetResult[] = bets.map((bet) => {
-        const selection = buildBetSelection(bet.betType, bet.selectedRunners);
-        const betPayout = calculatePayout(
-          Number(bet.betstr),
-          selection,
-          finishOrder,
-        );
-        return { bet, payout: betPayout };
-      });
-      setBetResults(results);
-      setPayout(results.reduce((sum, r) => sum + r.payout, 0));
+    // ベットごとに払い戻しを計算する
+    const results: BetResult[] = bets.map((bet) => {
+      const selection = buildBetSelection(bet.betType, bet.selectedRunners);
+      const betPayout = calculatePayout(
+        Number(bet.betstr),
+        selection,
+        finishOrder,
+      );
+      return { bet, payout: betPayout };
+    });
+    setBetResults(results);
+    setPayout(results.reduce((sum, r) => sum + r.payout, 0));
+
+    drawTimerRef.current = setTimeout(() => {
+      drawTimerRef.current = null;
       setPhase("PAYOUT");
-    }, 1000);
+    }, DRAW_DURATION_MS);
+  }
+
+  // 抽選演出を飛ばして、すぐに結果発表へ進む
+  function skipDrawing() {
+    if (phase !== "DRAWING") return;
+    if (drawTimerRef.current) {
+      clearTimeout(drawTimerRef.current);
+      drawTimerRef.current = null;
+    }
+    setPhase("PAYOUT");
   }
 
   function accept() {
@@ -195,8 +234,8 @@ export function useHorseGame() {
       result, // 今のレース結果
     };
 
-    // 直近8レース分だけ保持
-    const updated = [newHistory, ...raceHistory].slice(0, 8);
+    // 直近 MAX_HISTORY レース分だけ保持
+    const updated = [newHistory, ...raceHistory].slice(0, MAX_HISTORY);
 
     setRaceHistory(updated);
     setRaceNo((n) => n + 1);
@@ -205,12 +244,17 @@ export function useHorseGame() {
     localStorage.setItem("horse-race-history", JSON.stringify(updated));
     localStorage.setItem("horse-race-no", String(raceNo + 1));
 
+    // 次のレースに向けて、各馬の調子を配り直す
+    const nextConditions = dealConditions(runners, conditions);
+    setConditions(nextConditions);
+    localStorage.setItem("horse-conditions", JSON.stringify(nextConditions));
+
     // 次のレースの準備
     setMoney((prev) => prev + payout);
     setPhase("BETTING");
     setPayout(0);
     setBetResults([]);
-    setBets([createEmptyBet()]);
+    setBets([]);
   }
 
   return {
@@ -222,11 +266,13 @@ export function useHorseGame() {
     betResults,
     result,
     previousResult,
+    conditions,
     errorMessage,
     raceHistory,
     canResetMoney: canResetMoney(phase, money),
     canSubmit: canSubmitBets(bets, money),
     totalBetAmount: totalBetAmount(bets),
+    maxPayout: totalMaxPayout(bets, runners),
     maxBets: MAX_BETS,
     addBet,
     removeBet,
@@ -234,6 +280,7 @@ export function useHorseGame() {
     changeBetAmount,
     toggleRunner,
     go,
+    skipDrawing,
     accept,
     resetMoney,
   };

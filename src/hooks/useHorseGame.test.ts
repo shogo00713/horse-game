@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHorseGame } from "./useHorseGame";
+import { MAX_HISTORY } from "../logic/history";
+import { DRAW_DURATION_MS } from "../logic/drawAnimation";
 import type { Runner } from "../types/game";
 import type { RaceHistory } from "../types/game";
 
@@ -8,21 +10,38 @@ const phoenix: Runner = { id: "phoenix", name: "フェニックス", odds: 1.2 }
 const storm: Runner = { id: "storm", name: "ストームエッジ", odds: 2.0 };
 const thunder: Runner = { id: "thunder", name: "サンダーボルト", odds: 3.0 };
 
+// ベットを1件追加して、そのIDを返すヘルパー
+// (useHorseGameはベット0件から始まるので、テストのたびに自分でベットを作る)
+function addBetAndGetId(result: { current: ReturnType<typeof useHorseGame> }) {
+  let id: string | null = null;
+  act(() => {
+    id = result.current.addBet();
+  });
+  return id!;
+}
+
 describe("useHorseGame", () => {
   describe("初期状態", () => {
-    it("ベットが1件、空の状態で始まる", () => {
+    it("ベットは0件から始まる", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      expect(result.current.bets).toHaveLength(1);
+      expect(result.current.bets).toHaveLength(0);
+    });
+
+    it("addBetで作られるベットは、単勝・未選択・300円がデフォルト", () => {
+      const { result } = renderHook(() => useHorseGame());
+      addBetAndGetId(result);
+
       expect(result.current.bets[0].betType).toBe("WIN");
       expect(result.current.bets[0].selectedRunners).toEqual([]);
+      expect(result.current.bets[0].betstr).toBe("300");
     });
   });
 
   describe("toggleRunner", () => {
     it("選択済みの馬をクリック → 解除される", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -37,7 +56,7 @@ describe("useHorseGame", () => {
 
     it("単勝・複勝で選択状態で他の馬をクリック → そっちが選択される", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -48,7 +67,7 @@ describe("useHorseGame", () => {
 
     it("上限未満で別の馬をクリック → それも選択される", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.changeBetType(id, "QUINELLA");
@@ -62,15 +81,12 @@ describe("useHorseGame", () => {
       act(() => {
         result.current.toggleRunner(id, storm);
       });
-      expect(result.current.bets[0].selectedRunners).toEqual([
-        phoenix,
-        storm,
-      ]);
+      expect(result.current.bets[0].selectedRunners).toEqual([phoenix, storm]);
     });
 
     it("上限まで選んだ状態で別の馬をクリック → 何も起きない", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.changeBetType(id, "QUINELLA");
@@ -79,25 +95,19 @@ describe("useHorseGame", () => {
         result.current.toggleRunner(id, phoenix);
         result.current.toggleRunner(id, storm);
       });
-      expect(result.current.bets[0].selectedRunners).toEqual([
-        phoenix,
-        storm,
-      ]);
+      expect(result.current.bets[0].selectedRunners).toEqual([phoenix, storm]);
 
       act(() => {
         result.current.toggleRunner(id, thunder);
       });
-      expect(result.current.bets[0].selectedRunners).toEqual([
-        phoenix,
-        storm,
-      ]);
+      expect(result.current.bets[0].selectedRunners).toEqual([phoenix, storm]);
     });
   });
 
   describe("changeBetType", () => {
     it("betTypeを変えると、選択中の馬がリセットされる", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -116,21 +126,21 @@ describe("useHorseGame", () => {
     it("addBetで1件追加される", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      act(() => {
-        result.current.addBet();
-      });
+      addBetAndGetId(result);
 
-      expect(result.current.bets).toHaveLength(2);
+      expect(result.current.bets).toHaveLength(1);
     });
 
     it("5件まで追加できて、それ以上は増えない", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      act(() => {
-        for (let i = 0; i < 10; i++) {
+      // 1回ずつ act() を分けて、都度 bets.length が最新化されるようにする
+      // (実際のUIでも「1クリック→再レンダー」が都度挟まるのと同じ状況)
+      for (let i = 0; i < 10; i++) {
+        act(() => {
           result.current.addBet();
-        }
-      });
+        });
+      }
 
       expect(result.current.bets).toHaveLength(result.current.maxBets);
     });
@@ -138,13 +148,12 @@ describe("useHorseGame", () => {
     it("removeBetで指定したベットが消える", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      act(() => {
-        result.current.addBet();
-      });
-      const secondId = result.current.bets[1].id;
+      const firstId = addBetAndGetId(result);
+      addBetAndGetId(result);
+      expect(result.current.bets).toHaveLength(2);
 
       act(() => {
-        result.current.removeBet(secondId);
+        result.current.removeBet(firstId);
       });
 
       expect(result.current.bets).toHaveLength(1);
@@ -152,14 +161,14 @@ describe("useHorseGame", () => {
   });
 
   describe("canSubmit(ベット全件のバリデーション)", () => {
-    it("馬も金額も未入力の初期状態では、提出できない", () => {
+    it("ベットが1件も無ければ、提出できない", () => {
       const { result } = renderHook(() => useHorseGame());
       expect(result.current.canSubmit).toBe(false);
     });
 
     it("馬を選び、金額も入っていれば提出できる", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -170,27 +179,25 @@ describe("useHorseGame", () => {
 
     it("2件目が未入力のままだと、全体として提出できない", () => {
       const { result } = renderHook(() => useHorseGame());
-      const firstId = result.current.bets[0].id;
+      const firstId = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(firstId, phoenix);
-        result.current.addBet();
       });
+      addBetAndGetId(result); // 2件目は馬を選ばないまま
 
-      // 2件目は馬を選んでいないので、全体として不成立
       expect(result.current.canSubmit).toBe(false);
     });
 
     it("1件ずつは所持金以内でも、合計が所持金を超えていれば提出できない", () => {
       const { result } = renderHook(() => useHorseGame());
-      const firstId = result.current.bets[0].id;
+      const firstId = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(firstId, phoenix);
         result.current.changeBetAmount(firstId, "3000");
-        result.current.addBet();
       });
-      const secondId = result.current.bets[1].id;
+      const secondId = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(secondId, storm);
@@ -233,16 +240,16 @@ describe("useHorseGame", () => {
       expect(result.current.raceHistory[0].raceNo).toBe(1);
     });
 
-    it("9回acceptすると、履歴は8件までしか残らない(一番古いものが消える)", () => {
+    it("上限を超えてacceptすると、履歴はMAX_HISTORY件までしか残らない(一番古いものが消える)", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < MAX_HISTORY + 1; i++) {
         act(() => {
           result.current.accept();
         });
       }
 
-      expect(result.current.raceHistory).toHaveLength(8);
+      expect(result.current.raceHistory).toHaveLength(MAX_HISTORY);
 
       const raceNos = result.current.raceHistory.map((h) => h.raceNo);
       expect(raceNos).not.toContain(1);
@@ -259,26 +266,23 @@ describe("useHorseGame", () => {
       expect(saved).toHaveLength(1);
     });
 
-    it("acceptすると、ベットが1件の空の状態に戻る", () => {
+    it("acceptすると、ベットが0件の状態に戻る", () => {
       const { result } = renderHook(() => useHorseGame());
 
-      act(() => {
-        result.current.addBet();
-        result.current.addBet();
-      });
-      expect(result.current.bets).toHaveLength(3);
+      addBetAndGetId(result);
+      addBetAndGetId(result);
+      expect(result.current.bets).toHaveLength(2);
 
       act(() => {
         result.current.accept();
       });
 
-      expect(result.current.bets).toHaveLength(1);
-      expect(result.current.bets[0].selectedRunners).toEqual([]);
+      expect(result.current.bets).toHaveLength(0);
     });
   });
 
   describe("go", () => {
-    it("ベットが1件も成立していないと、エラーメッセージが出る", () => {
+    it("ベットが1件も無いと、エラーメッセージが出る", () => {
       const { result } = renderHook(() => useHorseGame());
 
       act(() => {
@@ -286,14 +290,14 @@ describe("useHorseGame", () => {
       });
 
       expect(result.current.errorMessage).toBe(
-        "馬の選択か金額が未入力のベットがあります。",
+        "ベットを1件以上追加してください。",
       );
       expect(result.current.phase).toBe("BETTING");
     });
 
     it("賭ける金額が0以下なら、エラーメッセージが出る", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -311,7 +315,7 @@ describe("useHorseGame", () => {
 
     it("合計金額が所持金より多いと、エラーメッセージが出る", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -337,7 +341,7 @@ describe("useHorseGame", () => {
 
     it("有効な入力なら、抽選中→結果発表の順に進む", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);
@@ -351,25 +355,59 @@ describe("useHorseGame", () => {
       expect(result.current.money).toBe(5000 - 300); // デフォルトのbetstr="300"分減る
 
       act(() => {
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(DRAW_DURATION_MS);
       });
 
       expect(result.current.phase).toBe("PAYOUT");
-      expect(result.current.result).toHaveLength(
-        result.current.runners.length,
-      );
+      expect(result.current.result).toHaveLength(result.current.runners.length);
       expect(result.current.betResults).toHaveLength(1);
+    });
+
+    it("抽選中でも結果は確定済みで、skipDrawingですぐ結果発表に進む", () => {
+      const { result } = renderHook(() => useHorseGame());
+      const id = addBetAndGetId(result);
+
+      act(() => {
+        result.current.toggleRunner(id, phoenix);
+      });
+      act(() => {
+        result.current.go();
+      });
+
+      expect(result.current.phase).toBe("DRAWING");
+      expect(result.current.result).toHaveLength(result.current.runners.length);
+      expect(result.current.betResults).toHaveLength(1);
+
+      act(() => {
+        result.current.skipDrawing();
+      });
+      expect(result.current.phase).toBe("PAYOUT");
+
+      // スキップ後にタイマーが残っていても、二重に進んだりしない
+      act(() => {
+        vi.advanceTimersByTime(DRAW_DURATION_MS);
+      });
+      expect(result.current.phase).toBe("PAYOUT");
+    });
+
+    it("抽選中でなければskipDrawingは何もしない", () => {
+      const { result } = renderHook(() => useHorseGame());
+
+      act(() => {
+        result.current.skipDrawing();
+      });
+
+      expect(result.current.phase).toBe("BETTING");
     });
 
     it("複数件のベットが、それぞれ個別に払い戻し判定され、合計がpayoutになる", () => {
       const { result } = renderHook(() => useHorseGame());
-      const firstId = result.current.bets[0].id;
+      const firstId = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(firstId, phoenix);
-        result.current.addBet();
       });
-      const secondId = result.current.bets[1].id;
+      const secondId = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(secondId, storm);
@@ -379,20 +417,17 @@ describe("useHorseGame", () => {
         result.current.go();
       });
       act(() => {
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(DRAW_DURATION_MS);
       });
 
       expect(result.current.betResults).toHaveLength(2);
-      const sum = result.current.betResults.reduce(
-        (s, r) => s + r.payout,
-        0,
-      );
+      const sum = result.current.betResults.reduce((s, r) => s + r.payout, 0);
       expect(result.current.payout).toBe(sum);
     });
 
     it("抽選中にもう一度go()を呼んでも、何も起きない", () => {
       const { result } = renderHook(() => useHorseGame());
-      const id = result.current.bets[0].id;
+      const id = addBetAndGetId(result);
 
       act(() => {
         result.current.toggleRunner(id, phoenix);

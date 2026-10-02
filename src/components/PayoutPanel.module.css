@@ -4,17 +4,96 @@
   border: 1px solid var(--border);
   background: var(--bg-card);
 
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+  flex: 1 1 0;
 }
 
-.payoutLabel {
-  font-size: 13px;
-  color: var(--text);
+/* 結果一覧。BETパネルのスロット一覧と同様、高さは左側パネルに合わせて伸びる */
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 0;
 }
 
-.payoutValue {
-  font-size: 28px;
+.betResultRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  font-size: 18px;
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+/* ベットしなかった枠。BETパネルの空きスロットと同じ見た目にする */
+.emptySlot {
+  flex: 1 1 0;
+  min-height: 44px;
+  border: 1px dashed var(--border);
+  background: transparent;
+}
+
+.betResultDetail {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.betType {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.runnerNames {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hit {
+  color: var(--accent);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.miss {
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.betPayout {
+  font-size: 26px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.totalLabel {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.totalValue {
+  font-size: 40px;
   font-weight: 900;
   letter-spacing: 0.2px;
 }
@@ -24,6 +103,8 @@
   color: var(--accent-contrast);
   border-color: var(--accent);
   font-weight: 700;
+  font-size: 18px;
+  padding: 16px;
 }
 
 .acceptButton:hover {

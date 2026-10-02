@@ -1,24 +1,32 @@
 /**
  * Betする画面を構成するコンポーネント
  *
- * BETTINGフェーズで基本的に働く画面
- * 最大 maxBets 件まで、同一レースに対するベットを同時に持てる
+ * 普段は、最大件数ぶんの「固定スロット」を表示する(空きは＋、埋まっていれば簡易表示)。
+ * スロットをクリックすると、パネルの中身がその場で編集画面(BetEditor)に差し替わる。
+ * 画面全体を覆うモーダルにはしない(左側のレース画面を隠さないため)。
  */
 
+import { useState } from "react";
 import type { BetType, Phase, Runner, Bet } from "../types/game";
 import styles from "./BetPanel.module.css";
-import BetSlip from "./BetSlip";
+import BetSummary from "./BetSummary";
+import BetEditor from "./BetEditor";
+import Icon from "./Icon";
+import type { Conditions } from "../logic/condition";
+import { isValidBet } from "../logic/betRules";
 
 // 親コンポーネントから渡されるprops
 type BetPanelProps = {
   bets: Bet[];
   phase: Phase;
   runners: Runner[];
+  conditions?: Conditions; // デバッグ表示用(開発時のみ使う)
   maxBets: number;
   totalBetAmount: number;
+  maxPayout: number;
   canSubmit: boolean;
 
-  onAddBet: () => void;
+  onAddBet: () => string | null;
   onRemoveBet: (id: string) => void;
   onChangeBetType: (id: string, betType: BetType) => void;
   onChangeBetAmount: (id: string, value: string) => void;
@@ -30,8 +38,10 @@ export default function BetPanel({
   bets,
   phase,
   runners,
+  conditions,
   maxBets,
   totalBetAmount,
+  maxPayout,
   canSubmit,
   onAddBet,
   onRemoveBet,
@@ -40,36 +50,106 @@ export default function BetPanel({
   onToggleRunner,
   onSubmit,
 }: BetPanelProps) {
+  // 今編集中のベットのID(nullなら通常のスロット一覧を表示)
+  const [editingBetId, setEditingBetId] = useState<string | null>(null);
+
   const isNotBetting = phase !== "BETTING";
   const isSubmitDisabled = isNotBetting || !canSubmit;
-  const isAddDisabled = isNotBetting || bets.length >= maxBets;
+  const editingBet = bets.find((b) => b.id === editingBetId) ?? null;
+
+  function handleAddClick() {
+    const newId = onAddBet();
+    if (newId) setEditingBetId(newId);
+  }
+
+  function handleConfirm() {
+    setEditingBetId(null);
+  }
+
+  function handleClose() {
+    // 未成立(馬未選択など)の新規ベットは、閉じるときに削除する
+    if (editingBet && !isValidBet(editingBet)) {
+      onRemoveBet(editingBet.id);
+    }
+    setEditingBetId(null);
+  }
+
+  // 編集中は、パネルの中身を丸ごと編集画面に差し替える
+  if (editingBet) {
+    return (
+      <div className={styles.betPanel}>
+        <BetEditor
+          bet={editingBet}
+          runners={runners}
+          conditions={conditions}
+          onChangeBetType={(betType) => onChangeBetType(editingBet.id, betType)}
+          onChangeBetAmount={(value) => onChangeBetAmount(editingBet.id, value)}
+          onToggleRunner={(runner) => onToggleRunner(editingBet.id, runner)}
+          onConfirm={handleConfirm}
+          onClose={handleClose}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.betPanel}>
-      <div className={styles.mainTitle}>BET</div>
+      <div className={styles.header}>
+        <div className={styles.mainTitle}>
+          <Icon name="ticket" /> BET
+        </div>
+        <p className={styles.guide}>
+          ＋の枠をタップ → 券種・馬・金額を選んで「確定」→
+          最後に「BETする」でレース開始！
+        </p>
+      </div>
 
-      {bets.map((bet, index) => (
-        <BetSlip
-          key={bet.id}
-          bet={bet}
-          index={index}
-          phase={phase}
-          runners={runners}
-          canRemove={bets.length > 1}
-          onRemove={() => onRemoveBet(bet.id)}
-          onChangeBetType={(betType) => onChangeBetType(bet.id, betType)}
-          onChangeBetAmount={(value) => onChangeBetAmount(bet.id, value)}
-          onToggleRunner={(runner) => onToggleRunner(bet.id, runner)}
-        />
-      ))}
+      <div className={styles.slotList}>
+        {Array.from({ length: maxBets }, (_, index) => {
+          const bet = bets[index];
 
-      <button type="button" onClick={onAddBet} disabled={isAddDisabled}>
-        ＋ ベットを追加({bets.length}/{maxBets})
-      </button>
+          if (bet) {
+            return (
+              <BetSummary
+                key={bet.id}
+                bet={bet}
+                index={index}
+                disabled={isNotBetting}
+                onEdit={() => setEditingBetId(bet.id)}
+                onRemove={() => onRemoveBet(bet.id)}
+              />
+            );
+          }
+
+          return (
+            <button
+              key={`empty-${index}`}
+              type="button"
+              className={styles.emptySlot}
+              disabled={isNotBetting}
+              onClick={handleAddClick}
+            >
+              ＋
+              <span className={styles.emptyHint} aria-hidden="true">
+                タップしてBETを追加
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <div className={styles.row}>
-        <span>合計</span>
+        <span>合計BET額</span>
         <span>¥{totalBetAmount}</span>
+      </div>
+      <div className={styles.payoutBox}>
+        <span className={styles.payoutLabel}>
+          <Icon name="coins" /> <span>最大払戻</span>
+        </span>
+        <span className={styles.payoutValue}>¥{maxPayout}</span>
+        <span className={styles.payoutNote}>
+          全部当たればこの額が手に入る！
+        </span>
       </div>
 
       <button
@@ -77,7 +157,8 @@ export default function BetPanel({
         disabled={isSubmitDisabled}
         onClick={onSubmit}
       >
-        BETする
+        {!isSubmitDisabled && <Icon name="play" />}{" "}
+        {totalBetAmount > 0 ? `¥${totalBetAmount} でBETする` : "BETする"}
       </button>
     </div>
   );

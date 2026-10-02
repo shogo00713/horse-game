@@ -26,13 +26,14 @@ function renderBetPanel(
   overrides: Partial<ComponentProps<typeof BetPanel>> = {},
 ) {
   const props: ComponentProps<typeof BetPanel> = {
-    bets: [makeBet()],
+    bets: [],
     phase: "BETTING",
     runners,
     maxBets: 5,
-    totalBetAmount: 300,
+    totalBetAmount: 0,
+    maxPayout: 0,
     canSubmit: false,
-    onAddBet: () => {},
+    onAddBet: () => "bet-1",
     onRemoveBet: () => {},
     onChangeBetType: () => {},
     onChangeBetAmount: () => {},
@@ -44,6 +45,56 @@ function renderBetPanel(
 }
 
 describe("BetPanel", () => {
+  it("初期状態(ベット0件)では、maxBets件ぶんの空きスロット(＋)が表示される", () => {
+    renderBetPanel({ bets: [], maxBets: 5 });
+
+    expect(screen.getAllByRole("button", { name: "＋" })).toHaveLength(5);
+  });
+
+  it("追加済みのベットは、簡易表示(1行)で表示される(残りは空きスロットのまま)", () => {
+    renderBetPanel({
+      bets: [
+        makeBet({
+          betType: "WIN",
+          selectedRunners: [runners[0]],
+          betstr: "300",
+        }),
+      ],
+      maxBets: 5,
+    });
+
+    expect(screen.getByText("単勝")).toBeInTheDocument();
+    expect(screen.getByText("フェニックス")).toBeInTheDocument();
+    expect(screen.getByText("¥300")).toBeInTheDocument();
+    // 残り4つは空きスロットのまま
+    expect(screen.getAllByRole("button", { name: "＋" })).toHaveLength(4);
+  });
+
+  it("空きスロットを押すと onAddBet が呼ばれ、編集画面が開く", async () => {
+    const onAddBet = vi.fn(() => "bet-1");
+    // onAddBetは本物のフックと違い、実際にbetsへ追加はしてくれない(ただのモック)ので、
+    // 返すIDに対応するベットをあらかじめbetsに含めておく
+    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onAddBet });
+
+    await userEvent.click(screen.getAllByRole("button", { name: "＋" })[0]);
+
+    expect(onAddBet).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "確定" })).toBeInTheDocument();
+  });
+
+  it("既に追加済みのベットをクリックしても編集画面が開く(onAddBetは呼ばれない)", async () => {
+    const onAddBet = vi.fn(() => "bet-1");
+    renderBetPanel({
+      bets: [makeBet({ id: "bet-1", selectedRunners: [runners[0]] })],
+      onAddBet,
+    });
+
+    await userEvent.click(screen.getByText("単勝"));
+
+    expect(onAddBet).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "確定" })).toBeInTheDocument();
+  });
+
   it("BETTING中かつcanSubmitならBETするボタンは有効化される", () => {
     renderBetPanel({ canSubmit: true });
 
@@ -62,32 +113,19 @@ describe("BetPanel", () => {
     expect(screen.getByRole("button", { name: "BETする" })).toBeDisabled();
   });
 
-  it("賭け方を変えると onChangeBetType がベットIDと一緒に呼ばれる", async () => {
-    const onChangeBetType = vi.fn();
-    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onChangeBetType });
+  it("合計金額がある場合、BETするボタンに金額が表示される", () => {
+    renderBetPanel({ canSubmit: true, totalBetAmount: 800 });
 
-    await userEvent.selectOptions(screen.getByRole("combobox"), "TRIO");
-
-    expect(onChangeBetType).toHaveBeenCalledWith("bet-1", "TRIO");
+    expect(
+      screen.getByRole("button", { name: "¥800 でBETする" }),
+    ).toBeInTheDocument();
   });
 
-  it("金額を入力すると onChangeBetAmount がベットIDと一緒に呼ばれる", async () => {
-    const onChangeBetAmount = vi.fn();
-    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onChangeBetAmount });
+  it("最大払戻額が表示される", () => {
+    renderBetPanel({ maxPayout: 1500 });
 
-    await userEvent.type(screen.getByRole("textbox"), "5");
-
-    expect(onChangeBetAmount).toHaveBeenCalled();
-    expect(onChangeBetAmount.mock.calls[0][0]).toBe("bet-1");
-  });
-
-  it("馬をクリックすると onToggleRunner がベットIDと一緒に呼ばれる", async () => {
-    const onToggleRunner = vi.fn();
-    renderBetPanel({ bets: [makeBet({ id: "bet-1" })], onToggleRunner });
-
-    await userEvent.click(screen.getByRole("button", { name: /フェニックス/ }));
-
-    expect(onToggleRunner).toHaveBeenCalledWith("bet-1", runners[0]);
+    expect(screen.getByText("最大払戻")).toBeInTheDocument();
+    expect(screen.getByText("¥1500")).toBeInTheDocument();
   });
 
   it("BETするボタンで onSubmit が呼ばれる", async () => {
@@ -99,37 +137,7 @@ describe("BetPanel", () => {
     expect(onSubmit).toHaveBeenCalledOnce();
   });
 
-  it("「＋ ベットを追加」で onAddBet が呼ばれる", async () => {
-    const onAddBet = vi.fn();
-    renderBetPanel({ onAddBet });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: /ベットを追加/ }),
-    );
-
-    expect(onAddBet).toHaveBeenCalledOnce();
-  });
-
-  it("ベットが最大件数に達していると「＋ ベットを追加」は無効化される", () => {
-    const fiveBets = Array.from({ length: 5 }, (_, i) =>
-      makeBet({ id: `bet-${i}` }),
-    );
-    renderBetPanel({ bets: fiveBets, maxBets: 5 });
-
-    expect(
-      screen.getByRole("button", { name: /ベットを追加/ }),
-    ).toBeDisabled();
-  });
-
-  it("ベットが1件だけのときは削除ボタンが表示されない", () => {
-    renderBetPanel({ bets: [makeBet({ id: "bet-1" })] });
-
-    expect(
-      screen.queryByRole("button", { name: /削除/ }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("ベットが2件以上のとき、削除ボタンで onRemoveBet がベットIDと一緒に呼ばれる", async () => {
+  it("削除ボタンで onRemoveBet がベットIDと一緒に呼ばれる", async () => {
     const onRemoveBet = vi.fn();
     renderBetPanel({
       bets: [makeBet({ id: "bet-1" }), makeBet({ id: "bet-2" })],
@@ -140,5 +148,47 @@ describe("BetPanel", () => {
     await userEvent.click(removeButtons[0]);
 
     expect(onRemoveBet).toHaveBeenCalledWith("bet-1");
+  });
+
+  it("編集画面で「やめる」を押すと、未成立(馬未選択)の新規ベットは削除される", async () => {
+    const onAddBet = vi.fn(() => "bet-1");
+    const onRemoveBet = vi.fn();
+    renderBetPanel({
+      bets: [makeBet({ id: "bet-1", selectedRunners: [] })], // 未成立
+      onAddBet,
+      onRemoveBet,
+    });
+
+    await userEvent.click(screen.getAllByRole("button", { name: "＋" })[0]);
+    await userEvent.click(screen.getByRole("button", { name: "やめる" }));
+
+    expect(onRemoveBet).toHaveBeenCalledWith("bet-1");
+  });
+
+  it("編集画面で「やめる」を押しても、成立済みのベットは削除されない", async () => {
+    const onRemoveBet = vi.fn();
+    renderBetPanel({
+      bets: [makeBet({ id: "bet-1", selectedRunners: [runners[0]] })], // 成立済み
+      onRemoveBet,
+    });
+
+    await userEvent.click(screen.getByText("単勝")); // 編集画面を開く
+    await userEvent.click(screen.getByRole("button", { name: "やめる" }));
+
+    expect(onRemoveBet).not.toHaveBeenCalled();
+  });
+
+  it("編集画面で「確定」を押すと、編集画面が閉じてスロット一覧に戻る", async () => {
+    renderBetPanel({
+      bets: [makeBet({ id: "bet-1", selectedRunners: [runners[0]] })],
+    });
+
+    await userEvent.click(screen.getByText("単勝"));
+    await userEvent.click(screen.getByRole("button", { name: "確定" }));
+
+    expect(
+      screen.queryByRole("button", { name: "確定" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("単勝")).toBeInTheDocument(); // 簡易表示に戻っている
   });
 });

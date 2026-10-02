@@ -1,0 +1,64 @@
+.runnerRow {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--bg-card);
+  color: var(--text);
+  text-align: left;
+}
+
+.runnerRow:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.runnerRow:hover {
+  background: var(--selected-bg);
+}
+
+.runnerRowSelected {
+  border-color: var(--selected-border);
+  background: var(--selected-bg);
+}
+
+.runnerName {
+  font-weight: 700;
+}
+
+.runnerOdds {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.runnerBadge {
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  transform: translateY(-50%);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* 開発時のみ表示するデバッグ情報 */
+.debugLabel {
+  margin-left: auto;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  border: 1px dashed var(--danger);
+}

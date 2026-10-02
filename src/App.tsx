@@ -3,6 +3,9 @@ import styles from "./App.module.css";
 import { useState } from "react";
 import { useHorseGame } from "./hooks/useHorseGame";
 import { useTheme } from "./hooks/useTheme";
+import { useTutorial } from "./hooks/useTutorial";
+import MenuModal from "./components/MenuModal";
+import Tutorial from "./components/Tutorial";
 import HistoryModal from "./components/HistoryModal";
 
 import Header from "./components/Header";
@@ -17,13 +20,16 @@ export default function App() {
     phase,
     payout,
     bets,
+    betResults,
     result,
     previousResult,
+    conditions,
     errorMessage,
     raceHistory,
     canResetMoney,
     canSubmit,
     totalBetAmount,
+    maxPayout,
     maxBets,
     addBet,
     removeBet,
@@ -31,15 +37,23 @@ export default function App() {
     changeBetAmount,
     toggleRunner,
     go,
+    skipDrawing,
     accept,
     resetMoney,
   } = useHorseGame();
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const tutorial = useTutorial();
   const { theme, toggleTheme } = useTheme();
 
-  // 全ベットで選んでいる馬をまとめて、着順側のハイライトに使う
-  const selectedRunners = bets.flatMap((bet) => bet.selectedRunners);
+  // 馬ごとに、その馬を選んでいるベットの番号(BET1, BET2…)をまとめる。着順側の印に使う
+  const betMarks: Record<string, number[]> = {};
+  bets.forEach((bet, index) => {
+    bet.selectedRunners.forEach((r) => {
+      (betMarks[r.id] ??= []).push(index + 1);
+    });
+  });
 
   return (
     <div className={styles.app}>
@@ -47,15 +61,27 @@ export default function App() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         history={raceHistory}
+        runners={runners}
       />
+
+      {isMenuOpen && (
+        <MenuModal
+          onClose={() => setIsMenuOpen(false)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          canResetMoney={canResetMoney}
+          onResetMoney={resetMoney}
+          onShowTutorial={tutorial.open}
+        />
+      )}
+
+      {tutorial.isOpen && <Tutorial onClose={tutorial.close} />}
 
       {/* ヘッダー部分 */}
       <Header
         money={money}
-        onResetMoney={resetMoney}
-        canResetMoney={canResetMoney}
-        theme={theme}
-        onToggleTheme={toggleTheme}
+        onOpenMenu={() => setIsMenuOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
       />
 
       {/* メイン部分 */}
@@ -67,10 +93,10 @@ export default function App() {
             runners={runners}
             result={result}
             previousResult={previousResult}
-            selectedRunners={selectedRunners}
+            betMarks={betMarks}
+            maxBets={maxBets}
+            onSkip={skipDrawing}
           />
-
-          <button onClick={() => setIsHistoryOpen(true)}> 📋 履歴</button>
         </div>
 
         <div className={styles.rightPanel}>
@@ -80,24 +106,32 @@ export default function App() {
             </p>
           )}
 
-          {/* ベットパネル */}
-          <BetPanel
-            bets={bets}
-            phase={phase}
-            runners={runners}
-            maxBets={maxBets}
-            totalBetAmount={totalBetAmount}
-            canSubmit={canSubmit}
-            onAddBet={addBet}
-            onRemoveBet={removeBet}
-            onChangeBetType={changeBetType}
-            onChangeBetAmount={changeBetAmount}
-            onToggleRunner={toggleRunner}
-            onSubmit={go}
-          />
-
-          {/* 払い戻しパネル */}
-          <PayoutPanel payout={payout} phase={phase} onAccept={accept} />
+          {/* PAYOUTフェーズ中は、BETパネルの代わりに払い戻しパネルだけを表示する(同じサイズのカードとして差し替え) */}
+          {phase === "PAYOUT" ? (
+            <PayoutPanel
+              betResults={betResults}
+              payout={payout}
+              maxBets={maxBets}
+              onAccept={accept}
+            />
+          ) : (
+            <BetPanel
+              bets={bets}
+              phase={phase}
+              runners={runners}
+              conditions={conditions}
+              maxBets={maxBets}
+              totalBetAmount={totalBetAmount}
+              maxPayout={maxPayout}
+              canSubmit={canSubmit}
+              onAddBet={addBet}
+              onRemoveBet={removeBet}
+              onChangeBetType={changeBetType}
+              onChangeBetAmount={changeBetAmount}
+              onToggleRunner={toggleRunner}
+              onSubmit={go}
+            />
+          )}
         </div>
       </main>
     </div>

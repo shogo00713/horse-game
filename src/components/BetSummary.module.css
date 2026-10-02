@@ -1,0 +1,57 @@
+.betSummary {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+.editButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  border: none;
+  text-align: left;
+  min-width: 0;
+}
+
+.index {
+  color: var(--muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.detail {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.betType {
+  font-weight: 700;
+}
+
+.runnerNames {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.amount {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.removeButton {
+  width: 36px;
+  border: none;
+  border-left: 1px solid var(--border);
+}

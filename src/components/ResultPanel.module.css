@@ -9,32 +9,57 @@
   align-content: start;
 }
 
-.phaseMessage {
-  font-size: 30px;
-  color: var(--text);
+.header {
+  display: grid;
+  gap: 4px;
 }
 
 .mainTitle {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.phaseMessage {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.guide {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.sectionTitle {
   font-size: 13px;
+  font-weight: 700;
   color: var(--muted);
 }
 
 .finishLines {
+  --row-h: 48px;
+  --row-gap: 6px;
+  position: relative;
   margin-top: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--row-gap);
 }
 
 .finishLine {
   font-size: 16px;
   font-weight: 800;
-  padding: 8px 10px;
+  padding: 8px 14px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--bg-card);
 
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+  height: var(--row-h);
+  box-sizing: border-box;
 }
 
 .finishLineSelected {
@@ -102,6 +127,7 @@
 
 .previousResultTitle {
   font-size: 13px;
+  font-weight: 700;
   color: var(--muted);
 }
 
@@ -118,4 +144,129 @@
   white-space: nowrap;
   font-size: 14px;
   color: var(--text);
+}
+
+/* ----- 抽選演出 ----- */
+
+.raceProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.raceProgressLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.raceProgressTrack {
+  flex: 1;
+  height: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.raceProgressFill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+/* 順位枠の上を動くプレート。枠(1位〜8位)の位置はそのまま固定 */
+.plate {
+  position: absolute;
+  top: 6px;
+  left: 96px;
+  right: 8px;
+  height: calc(var(--row-h) - 12px);
+  box-sizing: border-box;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  transition: transform 0.7s ease-in-out;
+}
+
+/* 自分がBETした馬 */
+.plateMine {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.plateTag {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  padding: 1px 0;
+  width: 100%;
+  text-align: center;
+  border: 1px solid currentColor;
+}
+
+/* 順位が固定されてからの演出 */
+.plateSettled {
+  border-color: var(--selected-border);
+}
+
+.plateWinner {
+  border-color: rgba(191, 141, 0, 1);
+  box-shadow: 0 0 0 2px rgba(191, 141, 0, 1);
+  animation: winnerPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes winnerPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(191, 141, 0, 1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(191, 141, 0, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plate {
+    transition: none;
+  }
+  .plateWinner {
+    animation: none;
+  }
+}
+
+.skipButton {
+  justify-self: end;
+  font-size: 13px;
+  padding: 8px 16px;
+}
+
+/* BET1〜BETnの印の列。番号ごとに幅を固定して、縦に見て揃うようにする */
+.markSlots {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.markSlot {
+  width: 48px;
+  display: flex;
+  justify-content: center;
+}
+
+.rowTag {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 1px 0;
+  width: 100%;
+  text-align: center;
+  color: var(--accent);
+  border: 1px solid var(--accent);
 }

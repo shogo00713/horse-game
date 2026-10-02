@@ -15,13 +15,14 @@
 }
 
 .leftPanel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
 }
 
 .rightPanel {
-  display: grid;
-  grid-template-rows: auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
 }
 

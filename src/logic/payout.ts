@@ -1,16 +1,18 @@
 /**
  * 賞金計算ロジック
  *
- * 賞金の計算は、各ベットタイプに応じて異なるアルゴリズムを使用する、アルゴリズムは以下
- * - 単勝: 1着のオッズを基に計算
- * - 複勝: 1着から3着までのオッズを基に計算
- * - 3連複: 3頭のオッズを基に計算
- * - 3連単: 順序を考慮した3頭のオッズを基に計算
- * - 馬連: 2頭のオッズを基に計算
- * - 馬単: 順序を考慮した2頭のオッズを基に計算
+ * 配当は、単勝は馬のオッズ、それ以外は的中確率から決める(odds.ts)。
+ * どの券種も、調子が分からない人にとっての払い戻し率は同じ(RTP)になる
+ * - 単勝: 1着のオッズ
+ * - 複勝: 3着以内に入る確率
+ * - 馬連: 1・2着の2頭(順不同)になる確率
+ * - 馬単: 1・2着の2頭(順番どおり)になる確率
+ * - 3連複: 1〜3着の3頭(順不同)になる確率
+ * - 3連単: 1〜3着の3頭(順番どおり)になる確率
  */
 
 import { BetSelection, Runner } from "../types/game";
+import { payoutMultiplier } from "./odds";
 
 /**
  * 配当計算アルゴリズム本体
@@ -43,6 +45,38 @@ export function calculatePayout(
   }
 }
 
+/**
+ * 的中した場合の払戻額(最大払戻額)を計算する
+ *
+ * calculatePayoutと違い、着順を必要としない(的中/非的中の判定を行わない)。
+ * ベット内容から「もし当たったらいくらになるか」だけを計算する
+ *
+ * @param field 出走馬全員(的中確率の計算に使う)
+ */
+export function calculateMaxPayout(
+  bet: number,
+  selection: BetSelection,
+  field: Runner[],
+): number {
+  return Math.floor(calculateOdds(selection, field) * bet);
+}
+
+// 的中可否に関わらない、ベット内容そのもののオッズ倍率
+// 単勝は馬のオッズ、それ以外は的中確率から「払い戻し率 ÷ 的中確率」で決める
+function calculateOdds(selection: BetSelection, field: Runner[]): number {
+  switch (selection.betType) {
+    case "WIN":
+      return selection.runner.odds;
+    case "PLACE":
+      return payoutMultiplier("PLACE", [selection.runner], field);
+    case "TRIO":
+    case "TRIFECTA":
+    case "QUINELLA":
+    case "EXACTA":
+      return payoutMultiplier(selection.betType, selection.runners, field);
+  }
+}
+
 // 順序を考慮した一致判定
 function isSameOrder(
   selected: Runner[],
@@ -70,26 +104,16 @@ function isSameCombination(
   return selectedIds.every((id, i) => id === resultIds[i]);
 }
 
-// 選んだ馬たちのオッズから、基準値+重み付き合計でオッズを計算する
-function calculateWeightedOdds(
-  base: number,
-  selected: Runner[],
-  weights: number[],
-): number {
-  return (
-    base + selected.reduce((sum, r, i) => sum + (r.odds - 1) * weights[i], 0)
-  );
-}
-
 // 単勝計算
 function calculateWinPayout(
   bet: number,
   selected: Runner,
   result: Runner[],
 ): number {
-  // 単勝のオッズ計算式は、そのままのオッズを使用する
   const isHit = isSameOrder([selected], result, 1);
-  return isHit ? Math.floor(selected.odds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(bet, { betType: "WIN", runner: selected }, result)
+    : 0;
 }
 
 // 複勝計算
@@ -98,10 +122,10 @@ function calculatePlacePayout(
   selected: Runner,
   result: Runner[],
 ): number {
-  // 複勝のオッズ計算式
-  const placeOdds = 1 + (selected.odds - 0.7) * 0.3553;
   const isHit = result.slice(0, 3).some((r) => r.id === selected.id);
-  return isHit ? Math.floor(placeOdds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(bet, { betType: "PLACE", runner: selected }, result)
+    : 0;
 }
 
 // 3連復計算
@@ -110,10 +134,14 @@ function calculateTrioPayout(
   threeSelected: [Runner, Runner, Runner],
   result: Runner[],
 ): number {
-  // 3連複のオッズ計算式
-  const trioOdds = calculateWeightedOdds(15, threeSelected, [2.0, 1.5, 1.0]);
   const isHit = isSameCombination(threeSelected, result, 3);
-  return isHit ? Math.floor(trioOdds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(
+        bet,
+        { betType: "TRIO", runners: threeSelected },
+        result,
+      )
+    : 0;
 }
 
 // 3連単計算
@@ -122,14 +150,14 @@ function calculateTrifectaPayout(
   threeSelected: [Runner, Runner, Runner],
   result: Runner[],
 ): number {
-  // 3連単のオッズ計算式
-  const trifectaOdds = calculateWeightedOdds(
-    40,
-    threeSelected,
-    [4.0, 2.5, 2.0],
-  );
   const isHit = isSameOrder(threeSelected, result, 3);
-  return isHit ? Math.floor(trifectaOdds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(
+        bet,
+        { betType: "TRIFECTA", runners: threeSelected },
+        result,
+      )
+    : 0;
 }
 
 // 馬連計算
@@ -138,10 +166,14 @@ function calculateQuinellaPayout(
   twoSelected: [Runner, Runner],
   result: Runner[],
 ): number {
-  // 馬連のオッズ計算式
-  const quinellaOdds = calculateWeightedOdds(8, twoSelected, [1.5, 1.0]);
   const isHit = isSameCombination(twoSelected, result, 2);
-  return isHit ? Math.floor(quinellaOdds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(
+        bet,
+        { betType: "QUINELLA", runners: twoSelected },
+        result,
+      )
+    : 0;
 }
 
 // 馬単計算
@@ -150,8 +182,12 @@ function calculateExactaPayout(
   twoSelected: [Runner, Runner],
   result: Runner[],
 ): number {
-  // 馬単のオッズ計算式
-  const exactaOdds = calculateWeightedOdds(20, twoSelected, [3.0, 2.0]);
   const isHit = isSameOrder(twoSelected, result, 2);
-  return isHit ? Math.floor(exactaOdds * bet) : 0;
+  return isHit
+    ? calculateMaxPayout(
+        bet,
+        { betType: "EXACTA", runners: twoSelected },
+        result,
+      )
+    : 0;
 }
