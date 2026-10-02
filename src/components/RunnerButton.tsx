@@ -1,4 +1,5 @@
 import type { Runner } from "../types/game";
+import styles from "./RunnerButton.module.css";
 
 type RunnerButtonProps = {
   runner: Runner;
@@ -18,15 +19,21 @@ export default function RunnerButton({
   return (
     <button
       type="button"
-      className={isSelected ? "runner runner--selected" : "runner"}
+      className={
+        isSelected
+          ? `${styles.runner} ${styles.runnerSelected}`
+          : styles.runner
+      }
       disabled={disabled}
       onClick={onClick}
     >
-      {selectionBadge && <span className="runnerBadge">{selectionBadge}</span>}
+      {selectionBadge && (
+        <span className={styles.runnerBadge}>{selectionBadge}</span>
+      )}
 
-      <div className="runnerName">{runner.name}</div>
+      <div className={styles.runnerName}>{runner.name}</div>
 
-      <div className="runnerOdds">Odds {runner.odds.toFixed(1)}</div>
+      <div className={styles.runnerOdds}>Odds {runner.odds.toFixed(1)}</div>
     </button>
   );
 }

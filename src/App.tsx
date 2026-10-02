@@ -1,4 +1,4 @@
-import "./App.css";
+import styles from "./App.module.css";
 
 import { useState } from "react";
 import { useHorseGame } from "./hooks/useHorseGame";
@@ -35,7 +35,7 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       <HistoryModal
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
@@ -46,8 +46,8 @@ export default function App() {
       <Header money={money} onResetMoney={resetMoney} canResetMoney={canResetMoney} />
 
       {/* メイン部分 */}
-      <main>
-        <div className="left_panel">
+      <main className={styles.main}>
+        <div className={styles.leftPanel}>
           {/* 結果表示パネル */}
           <ResultPanel
             phase={phase}
@@ -57,18 +57,15 @@ export default function App() {
             selectedRunners={selectedRunners}
           />
 
-          <button
-            className="history_button"
-            onClick={() => setIsHistoryOpen(true)}
-          >
+          <button onClick={() => setIsHistoryOpen(true)}>
             {" "}
             📋 履歴
           </button>
         </div>
 
-        <div className="right_panel">
+        <div className={styles.rightPanel}>
           {errorMessage && (
-            <p className="error_message" aria-live="polite">
+            <p className={styles.errorMessage} aria-live="polite">
               {errorMessage}
             </p>
           )}

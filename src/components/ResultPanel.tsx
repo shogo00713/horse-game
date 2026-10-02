@@ -8,6 +8,7 @@
  */
 
 import type { Phase, Runner } from "../types/game";
+import styles from "./ResultPanel.module.css";
 
 // 親コンポーネントから渡されるprops
 type ResultPanelProps = {
@@ -41,38 +42,53 @@ export default function ResultPanel({
   const selectedIds = selectedRunners.map((runner) => runner.id);
 
   return (
-    <div className="result_panel">
-      <div className="phaseMessage">現在 : {phaseMessage(phase)}</div>
+    <div className={styles.resultPanel}>
+      <div className={styles.phaseMessage}>現在 : {phaseMessage(phase)}</div>
 
-      <div className="mainTitle">着順</div>
+      <div className={styles.mainTitle}>着順</div>
 
-      <div className="finishLines">
+      <div className={styles.finishLines}>
         {/* 今回の着順を表示する部分 */}
-        {runners.map((runner, i) => (
-          <div
-            key={runner.id}
-            className={
-              phase === "PAYOUT" && selectedIds?.includes(result?.[i]?.id)
-                ? "finishLine finishLine--selected"
-                : "finishLine"
-            }
-          >
-            <span className={`finishRank finishRank--${i + 1}`}>
-              {i + 1}位:
-            </span>
-            <span className={`finishName finishName--${i + 1}`}>
-              {phase === "PAYOUT" ? (result?.[i]?.name ?? "-") : "-"}
-            </span>
-          </div>
-        ))}
+        {runners.map((runner, i) => {
+          const rank = i + 1;
+          const isSelected =
+            phase === "PAYOUT" && selectedIds?.includes(result?.[i]?.id);
+
+          return (
+            <div
+              key={runner.id}
+              data-testid="finish-line"
+              className={
+                isSelected
+                  ? `${styles.finishLine} ${styles.finishLineSelected}`
+                  : styles.finishLine
+              }
+            >
+              <span
+                className={`${styles.finishRank} ${styles[`finishRank${rank}`] ?? ""}`}
+              >
+                {rank}位:
+              </span>
+              <span
+                className={`${styles.finishName} ${styles[`finishName${rank}`] ?? ""}`}
+              >
+                {phase === "PAYOUT" ? (result?.[i]?.name ?? "-") : "-"}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="previous_result">
-        <div className="previous_result_title">前回結果</div>
-        <div className="previous_result_lines">
+      <div className={styles.previousResult}>
+        <div className={styles.previousResultTitle}>前回結果</div>
+        <div className={styles.previousResultLines}>
           {/* 前回の着順を表示する部分 */}
           {runners.map((_, rank) => (
-            <div key={rank} className="previous_result_line">
+            <div
+              key={rank}
+              data-testid="previous-result-line"
+              className={styles.previousResultLine}
+            >
               {rank + 1}位:{" "}
               {phase !== "DRAWING"
                 ? (previousResult?.[rank]?.name ?? "-")

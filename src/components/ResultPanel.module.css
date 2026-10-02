@@ -1,0 +1,120 @@
+.resultPanel {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.phaseMessage {
+  font-size: 30px;
+  color: var(--text);
+}
+
+.mainTitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.finishLines {
+  margin-top: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.finishLine {
+  font-size: 16px;
+  font-weight: 800;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.finishLineSelected {
+  background: rgba(219, 234, 254, 0.9);
+}
+
+.finishRank {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.finishName {
+  color: rgba(0, 0, 0, 0.9);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.finishRank1 {
+  color: rgba(191, 141, 0, 1);
+  font-size: 22px;
+}
+
+.finishName1 {
+  color: var(--text);
+  font-size: 22px;
+}
+
+.finishRank2 {
+  color: rgba(122, 130, 146, 1);
+  font-size: 20px;
+}
+
+.finishName2 {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.finishRank3 {
+  color: rgba(158, 92, 56, 1);
+  font-size: 18px;
+}
+
+.finishName3 {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.finishRank4,
+.finishRank5,
+.finishRank6,
+.finishRank7 {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.previousResult {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.previousResultTitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.previousResultLines {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.previousResultLine {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--text);
+}

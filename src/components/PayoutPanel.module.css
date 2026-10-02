@@ -1,0 +1,37 @@
+.payoutPanel {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+
+  display: grid;
+  gap: 14px;
+}
+
+.payoutLabel {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.payoutValue {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.acceptButton {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.acceptButton:hover {
+  opacity: 0.92;
+}
+
+.acceptButton:disabled {
+  background: rgba(37, 99, 235, 0.4);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+}

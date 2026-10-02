@@ -1,23 +1,25 @@
+import styles from "./Header.module.css";
+
 type HeaderProps = {
   money: number;
   onResetMoney: () => void;
   canResetMoney: boolean;
 };
 
-export default function Header({ money, onResetMoney, canResetMoney }: HeaderProps) {
+export default function Header({
+  money,
+  onResetMoney,
+  canResetMoney,
+}: HeaderProps) {
   return (
-    <header>
-      <div className="header_inner">
-        <h1 className="header_title">競馬ゲーム</h1>
-        <button 
-          className="reset_button"
-          onClick={onResetMoney}
-          disabled={!canResetMoney}
-        >
+    <header className={styles.header}>
+      <div className={styles.headerInner}>
+        <h1 className={styles.headerTitle}>競馬ゲーム</h1>
+        <button onClick={onResetMoney} disabled={!canResetMoney}>
           所持金リセット
         </button>
-        <h1 className="header_sub">
-          所持金: <span className="money">{money}</span> 円
+        <h1 className={styles.headerSub}>
+          所持金: <span className={styles.money}>{money}</span> 円
         </h1>
       </div>
     </header>

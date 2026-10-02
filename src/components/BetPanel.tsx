@@ -7,6 +7,7 @@
 
 import type { BetType, Phase, Runner } from "../types/game";
 import { maxSelectable, isOrderedBetType } from "../logic/betRules";
+import styles from "./BetPanel.module.css";
 
 import RunnerButton from "./RunnerButton";
 
@@ -46,13 +47,13 @@ export default function BetPanel({
     isNotBetting || selectedRunners.length !== maxSelectable(betType);
 
   return (
-    <div className="bet_panel">
-      <div className="mainTitle">ベット</div>
+    <div className={styles.betPanel}>
+      <div className={styles.mainTitle}>ベット</div>
 
-      <div className="row">
-        <div className="bet_panel_label">賭け方</div>
+      <div className={styles.row}>
+        <div>賭け方</div>
         <select
-          className="bet_panel_select"
+          className={styles.betPanelSelect}
           value={betType}
           disabled={isNotBetting}
           onChange={(e) => onChangeBetType(e.target.value as BetType)}
@@ -67,10 +68,10 @@ export default function BetPanel({
       </div>
 
       <div>
-        <div className="bet_panel_label ">馬を選択</div>
+        <div>馬を選択</div>
 
         {/* 登録されている馬をボタンとして表示 */}
-        <div className="bet_panel_race_list">
+        <div className={styles.betPanelRaceList}>
           {runners.map((r) => {
             const index = selectedRunners.findIndex(
               (runner) => runner.id === r.id,
@@ -100,22 +101,21 @@ export default function BetPanel({
         </div>
       </div>
 
-      <div className="row">
-        <div className="row">
-          <div className="bet_amount label">賭ける金額</div>
+      <div className={styles.row}>
+        <div className={styles.row}>
+          <div className={styles.betAmountLabel}>賭ける金額</div>
           <input
             type="text"
             value={betstr}
             disabled={isNotBetting}
             onChange={(e) => onChangeBet(e.target.value)}
           />
-          <div className="bet_amount unit">円</div>
+          <div className={styles.betAmountUnit}>円</div>
         </div>
-
       </div>
 
       <button
-        className="bet_panel_submit_button"
+        className={styles.betPanelSubmitButton}
         disabled={isSubmitDisabled}
         onClick={onSubmit}
       >

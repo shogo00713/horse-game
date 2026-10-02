@@ -1,0 +1,30 @@
+.header {
+  width: 100%;
+  padding: 15px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 40px;
+  letter-spacing: 2px;
+}
+
+.headerSub {
+  margin: 0;
+  margin-left: auto;
+  font-size: 25px;
+}
+
+.money {
+  font-size: 35px;
+  font-weight: 900;
+  color: rgba(37, 99, 235, 0.85);
+}

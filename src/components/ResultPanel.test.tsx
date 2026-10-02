@@ -21,7 +21,7 @@ const previousResult: Runner[] = [
 
 describe("ResultPanel", () => {
   it("BETTINGフェーズの場合、現在の着順は非表示、前回の着順は表示", () => {
-    const { container } = render(
+    render(
       <ResultPanel
         phase="BETTING"
         runners={runners}
@@ -36,15 +36,13 @@ describe("ResultPanel", () => {
     expect(screen.getByText("2位:")).toBeInTheDocument();
     expect(screen.getAllByText("-")).toHaveLength(runners.length);
 
-    const previousLines = container.querySelectorAll(".finishLine");
+    const previousLines = screen.getAllByTestId("finish-line");
     previousLines.forEach((line) => {
       expect(line).not.toHaveTextContent("フェニックス");
       expect(line).not.toHaveTextContent("ストームエッジ");
     });
 
-    const previousResultLines = container.querySelectorAll(
-      ".previous_result_line",
-    );
+    const previousResultLines = screen.getAllByTestId("previous-result-line");
     expect(previousResultLines[0]).toHaveTextContent("1位:");
     expect(previousResultLines[0]).toHaveTextContent("ストームエッジ");
     expect(previousResultLines[1]).toHaveTextContent("2位:");
@@ -52,7 +50,7 @@ describe("ResultPanel", () => {
   });
 
   it("DRAWINGフェーズの場合、現在の着順は非表示、前回の着順も非表示", () => {
-    const { container } = render(
+    render(
       <ResultPanel
         phase="DRAWING"
         runners={runners}
@@ -66,7 +64,7 @@ describe("ResultPanel", () => {
     expect(screen.getAllByText("-")).toHaveLength(runners.length);
 
     // previous_result_lines側も、名前が出ていないことを直接確認する
-    const previousLines = container.querySelectorAll(".previous_result_line");
+    const previousLines = screen.getAllByTestId("previous-result-line");
     previousLines.forEach((line) => {
       expect(line).not.toHaveTextContent("フェニックス");
       expect(line).not.toHaveTextContent("ストームエッジ");
@@ -74,7 +72,7 @@ describe("ResultPanel", () => {
   });
 
   it("PAYOUTフェーズの場合、現在の着順は表示、前回の着順も表示", () => {
-    const { container } = render(
+    render(
       <ResultPanel
         phase="PAYOUT"
         runners={runners}
@@ -84,15 +82,10 @@ describe("ResultPanel", () => {
       />,
     );
 
-    const firstLine = container.querySelectorAll(".finishLine")[0];
-    const secondLine = container.querySelectorAll(".finishLine")[1];
-
-    const previousFirstLine = container.querySelectorAll(
-      ".previous_result_line",
-    )[0];
-    const previousSecondLine = container.querySelectorAll(
-      ".previous_result_line",
-    )[1];
+    const [firstLine, secondLine] = screen.getAllByTestId("finish-line");
+    const [previousFirstLine, previousSecondLine] = screen.getAllByTestId(
+      "previous-result-line",
+    );
 
     expect(screen.getByText("現在 : 結果発表！")).toBeInTheDocument();
 

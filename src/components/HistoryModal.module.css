@@ -1,0 +1,79 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modalContent {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+}
+
+.modalEmpty {
+  color: #888;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.historyItem {
+  border-top: 1px solid #eee;
+  padding: 12px 0;
+}
+
+.historyRaceNo {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.historyResult {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.historyRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.historyRank {
+  color: #888;
+  width: 28px;
+}
+
+.historyName {
+  font-weight: 600;
+  flex: 1;
+}
+
+.historyOdds {
+  color: #888;
+  font-size: 12px;
+}
