@@ -12,14 +12,13 @@ import type { Runner } from "../types/game";
 
 export type Condition = 0 | 1 | 2 | 3 | 4;
 
-export const CONDITION_LEVELS = 5;
+export const CONDITION_LEVELS = 5; // 0〜4の5段階
+export const NORMAL_CONDITION: Condition = 2; // デフォルトは普通(2)
+
 // 表示名(デバッグ表示用)
 export const CONDITION_LABELS = ["絶不調", "不調", "普通", "好調", "絶好調"];
 
-export const NORMAL_CONDITION: Condition = 2;
-
 // 調子の割合(8頭あたりの枚数)。絶不調1・不調1・普通3・好調2・絶好調1
-// 頭数に応じて比例して増える(16頭なら 絶不調2・不調2・普通6・好調4・絶好調2)
 const DECK_RATIO_PER_8 = [1, 1, 3, 2, 1];
 
 /**

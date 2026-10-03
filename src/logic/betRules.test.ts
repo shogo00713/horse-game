@@ -6,7 +6,6 @@ import {
   canResetMoney,
   isValidBet,
   totalBetAmount,
-  totalMaxPayout,
   canSubmitBets,
 } from "./betRules";
 import type { Runner, Bet } from "../types/game";
@@ -14,7 +13,6 @@ import type { Runner, Bet } from "../types/game";
 const phoenix: Runner = { id: "phoenix", name: "フェニックス", odds: 1.2 };
 const storm: Runner = { id: "storm", name: "ストームエッジ", odds: 2.0 };
 const thunder: Runner = { id: "thunder", name: "サンダーボルト", odds: 3.0 };
-const field = [phoenix, storm, thunder];
 
 // テスト用のベットを簡単に作るヘルパー
 function makeBet(overrides: Partial<Bet> = {}): Bet {
@@ -93,27 +91,6 @@ describe("totalBetAmount", () => {
   });
   it("ベットが無ければ0", () => {
     expect(totalBetAmount([])).toBe(0);
-  });
-});
-
-describe("totalMaxPayout", () => {
-  it("全件が的中した場合の払戻額を合計する", () => {
-    const bets = [
-      makeBet({ betType: "WIN", selectedRunners: [phoenix], betstr: "300" }),
-      makeBet({ betType: "WIN", selectedRunners: [storm], betstr: "100" }),
-    ];
-    expect(totalMaxPayout(bets, field)).toBe(
-      Math.floor(300 * phoenix.odds) + Math.floor(100 * storm.odds),
-    );
-  });
-
-  it("馬・金額が未入力の不成立なベットは0として扱う", () => {
-    const bets = [makeBet({ selectedRunners: [] })];
-    expect(totalMaxPayout(bets, field)).toBe(0);
-  });
-
-  it("ベットが無ければ0", () => {
-    expect(totalMaxPayout([], field)).toBe(0);
   });
 });
 

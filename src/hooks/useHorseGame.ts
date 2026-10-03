@@ -30,7 +30,6 @@ import {
   canResetMoney,
   isValidBet,
   totalBetAmount,
-  totalMaxPayout,
   canSubmitBets,
 } from "../logic/betRules";
 
@@ -280,7 +279,6 @@ export function useHorseGame() {
     canResetMoney: canResetMoney(phase, money),
     canSubmit: canSubmitBets(bets, money),
     totalBetAmount: totalBetAmount(bets),
-    maxPayout: totalMaxPayout(bets, runners),
     maxBets: MAX_BETS,
     addBet,
     removeBet,
